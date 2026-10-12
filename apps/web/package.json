@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "pots:generate": "tsx scripts/generate-pots.mts",
-    "sync:notion": "tsx scripts/sync-notion.mts"
+    "sync:notion": "tsx scripts/sync-notion.mts",
+    "notion:export": "tsx scripts/export-notion-csv.mts",
+    "supabase:seed": "tsx scripts/seed-supabase.mts",
+    "check:connections": "tsx scripts/check-connections.mts"
   },
   "dependencies": {
     "next": "^15.5.27",

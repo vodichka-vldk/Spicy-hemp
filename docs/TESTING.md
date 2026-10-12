@@ -14,6 +14,18 @@ node tests/e2e/smoke.mjs
 
 Сквозной тест (iPhone 13 + десктоп) проходит: перенаправление языка, поиск и фильтры, сканирование QR, баннер горшка, `.ics` напоминание, неверный код, корзина, валидацию формы, заказ, страницу заказа без персональных данных, переключатель языка, админку (вход, партии, выдачу QR горшков, аналитику, печатный лист QR), sitemap/robots, отсутствие горизонтального скролла и ошибок в консоли.
 
+## Подключение Supabase и Notion
+
+```bash
+cd apps/web
+# 1. Supabase: выполните supabase/migrations/0001_init.sql в SQL editor проекта, затем в .env.local:
+#    SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+npm run check:connections      # проверяет таблицы и базы
+npm run supabase:seed          # загружает 15 трав и 6 семейств в Supabase
+# 2. Notion: импорт docs/notion-import/*.csv (см. docs/NOTION.md), затем NOTION_TOKEN, NOTION_DB_SPECIES, NOTION_DB_FAMILIES
+npm run sync:notion            # Notion -> JSON + Supabase
+```
+
 ## Что обязательно проверить руками (я не мог)
 
 | # | Проверка | Как |

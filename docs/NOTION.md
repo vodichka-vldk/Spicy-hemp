@@ -2,6 +2,14 @@
 
 Notion это редакторская среда. Сайт берёт контент не из Notion в момент запроса, а из результата синхронизации (`npm run sync:notion`), поэтому он быстрый и не зависит от лимитов Notion.
 
+## Быстрый импорт 15 трав
+
+Готовые CSV лежат в `docs/notion-import/` (`families.csv`, `species.csv`), пересоздать: `npm run notion:export` в `apps/web`.
+
+1. В Notion: **New page → Table → … → Import → CSV**, отдельно для каждого файла.
+2. Поменяйте типы колонок: Status, Family, Cycle, Humidity, Pet safe, Light level → **Select**; Difficulty, Water every days, Temp min/max, Pot cm, Price UAH → **Number**; Alone in pot → **Checkbox** (Yes/No); Companions → **Multi-select**.
+3. Подключите интеграцию к обеим базам и запустите `npm run check:connections`, затем `npm run sync:notion`.
+
 ## Как подключить
 
 1. Создайте интеграцию в Notion (Settings → Connections → Develop or manage integrations), скопируйте токен в `NOTION_TOKEN`.

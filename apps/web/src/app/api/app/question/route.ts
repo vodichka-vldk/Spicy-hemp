@@ -2,6 +2,7 @@ import { askQuestion, hintFor } from "@/lib/questions";
 import { isValidCode } from "@/lib/pots";
 import { authenticate, unauthorized } from "@/lib/mini-app-auth";
 import { siteUrl } from "@/lib/payments";
+import { LIMITS, clientIp, hit, tooMany } from "@/lib/ratelimit";
 import { store } from "@/lib/store";
 import { sendMessage } from "@/lib/telegram";
 
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const a = await authenticate(req);
   if (!a) return unauthorized();
+  const gate = hit(`question:${a.owner.id}`, LIMITS.question);
+  if (!gate.ok) return tooMany(gate.retryAfterSec);
   const body = (await req.json().catch(() => null)) as { code?: unknown; text?: unknown; symptom?: unknown } | null;
   if (!body || typeof body.code !== "string" || typeof body.text !== "string" || !isValidCode(body.code)) return Response.json({ error: "bad_request" }, { status: 400 });
   const r = await askQuestion(store(), (c, t, m) => sendMessage(c, t, m), siteUrl(), a.owner, body.code, body.text, typeof body.symptom === "string" ? body.symptom : undefined);

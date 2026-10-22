@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { parseUa, visitorHash } from "@/lib/analytics";
 import { detectLocale, isLocale } from "@/lib/i18n";
 import { cleanCode, isValidCode } from "@/lib/pots";
+import { LIMITS, hit } from "@/lib/ratelimit";
 import { store } from "@/lib/store";
 import { randomUUID } from "node:crypto";
 
@@ -40,6 +41,9 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ code: strin
   const item = await db.getItem(code);
   const pot = item ? null : await db.getPot(code);
   const known = item ?? pot;
+
+  // unknown codes are cheap to spray: past the limit they are neither looked up for analytics nor logged
+  if (!known && !hit(`lookup:${ip}`, LIMITS.lookup).ok) return redirect(`/${locale}/pot/unknown`);
 
   try {
     const first = known ? !(await db.hasScanned(code, visitor)) : true;

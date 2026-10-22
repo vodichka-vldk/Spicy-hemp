@@ -4,14 +4,16 @@ import fs from "node:fs";
 
 const BASE = process.env.BASE ?? "http://localhost:3100";
 const ADMIN = process.env.ADMIN_PASSWORD ?? "test123";
-const SHOTS = process.env.SHOTS ?? "/tmp/claude-0/shots";
+const SHOTS = process.env.SHOTS ?? "test-results/shots";
+fs.mkdirSync(SHOTS, { recursive: true });
 const demo = JSON.parse(fs.readFileSync(".data/store.json", "utf8")).pots;
 const basil = demo.find((p) => p.species === "basil").code;
 
 let failures = 0;
 const ok = (cond, msg) => { console.log(`${cond ? "PASS" : "FAIL"}  ${msg}`); if (!cond) failures++; };
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined);
+const browser = await chromium.launch({ executablePath: CHROMIUM });
 const ctx = await browser.newContext({ ...devices["iPhone 13"], acceptDownloads: true, locale: "uk-UA", extraHTTPHeaders: { "Accept-Language": "uk-UA,uk;q=0.9" } });
 const page = await ctx.newPage();
 const errors = [];
@@ -325,6 +327,17 @@ ok((await (await api("/api/app/me", initFor(TG))).json()).owner.notify === true,
 ok((await api("/api/app/activate", initFor(9999), { code })).status() === 409, "another buyer cannot take an activated pot");
 ok((await api("/api/app/rename", initFor(9999), { code, name: "Моє" })).status() === 404, "another buyer cannot rename it");
 ok((await api("/api/app/activate", initFor(9999), { code: "ZZZZ2222" })).status() === 400, "a mistyped code (bad check character) is refused");
+
+// 8c2. hardening: brute force on codes, headers, health
+const BF = 700000 + (Date.now() % 100000);
+let lastStatus = 0;
+for (let n = 0; n < 10; n++) lastStatus = (await api("/api/app/activate", initFor(BF), { code: "ZZZZ2222" })).status();
+ok(lastStatus === 429, "guessing pot codes is rate limited (429 after 8 failures)");
+const home = await ctx.request.get(BASE + "/uk");
+ok(home.headers()["x-frame-options"] === "DENY" && home.headers()["x-content-type-options"] === "nosniff", "pages carry security headers and cannot be framed");
+ok(!(await ctx.request.get(BASE + "/app")).headers()["x-frame-options"], "the Mini App page can be opened inside Telegram");
+const health = await ctx.request.get(BASE + "/api/health");
+ok(health.ok() && (await health.json()).ok === true, "health endpoint answers");
 
 // 8d. questions to Katya, owners, pot card, care schedule, cron
 const asked = await api("/api/app/question", initFor(TG), { code, text: "Листя жовтіє E2E", symptom: "overwater" });

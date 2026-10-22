@@ -3,6 +3,7 @@ import { isValidCode } from "@/lib/pots";
 import { authenticate, unauthorized } from "@/lib/mini-app-auth";
 import { notifyAdmin } from "@/lib/notify";
 import { siteUrl } from "@/lib/payments";
+import { LIMITS, clientIp, hit, tooMany } from "@/lib/ratelimit";
 import { store } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ const MAX_BODY = 60_000_000;
 export async function POST(req: Request) {
   const a = await authenticate(req);
   if (!a) return unauthorized();
+  const gate = hit(`journal:${a.owner.id}`, LIMITS.journal);
+  if (!gate.ok) return tooMany(gate.retryAfterSec);
   if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY) return Response.json({ error: "too_big" }, { status: 413 });
   let fd: FormData;
   try { fd = await req.formData(); } catch { return Response.json({ error: "bad_request" }, { status: 400 }); }

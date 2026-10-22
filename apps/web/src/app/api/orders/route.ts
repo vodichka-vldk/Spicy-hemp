@@ -3,11 +3,14 @@ import { loadPublicProducts } from "@/lib/catalog-server";
 import { buildOrder, providerReady, validateOrder } from "@/lib/orders";
 import { registerNewOrder } from "@/lib/order-flow";
 import { createStripeSession, siteUrl } from "@/lib/payments";
+import { LIMITS, clientIp, hit, tooMany } from "@/lib/ratelimit";
 import { store } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  const gate = hit(`order:${clientIp(req)}`, LIMITS.order);
+  if (!gate.ok) return tooMany(gate.retryAfterSec);
   let json: unknown;
   try {
     json = await req.json();

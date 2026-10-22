@@ -70,7 +70,19 @@ export function canTransition<S extends string>(table: Record<S, S[]>, from: S, 
   return table[from]?.includes(to) ?? false;
 }
 
-/** Public display id, e.g. 1 -> "САД · 001". */
-export function displayId(no: number): string {
-  return `САД · ${String(no).padStart(3, "0")}`;
+/** Public display id, numbered per kind: baskets "САД · 001", singles "РОСЛИНА · 001" (en: GARDEN / PLANT). */
+export function displayId(kind: ItemKind, no: number, locale: "uk" | "en" = "uk"): string {
+  const word = kind === "basket" ? (locale === "uk" ? "САД" : "GARDEN") : locale === "uk" ? "РОСЛИНА" : "PLANT";
+  return `${word} · ${String(no).padStart(3, "0")}`;
+}
+
+const NAME_IDEAS: Record<"uk" | "en", { basket: string[]; single: string[] }> = {
+  uk: { basket: ["Мій кухонний сад", "Ароматний куточок", "Зелений сніданок", "Пряна гавань", "Сад на підвіконні"], single: ["Зелений друг", "Мій аромат", "Кущик-красень", "Пахуча дружба"] },
+  en: { basket: ["My kitchen garden", "Fragrant corner", "Green breakfast", "Spice harbour", "Windowsill garden"], single: ["Green buddy", "My aroma", "Little beauty", "Fragrant friend"] },
+};
+
+/** Gentle suggestions for the "name your garden" field; `themes` can add ideas like the set name ("для чаю"). */
+export function suggestGardenNames(kind: ItemKind, locale: "uk" | "en", themes: string[] = [], count = 4): string[] {
+  const own = themes.map((t) => t.trim()).filter(Boolean);
+  return [...own, ...NAME_IDEAS[locale][kind]].slice(0, count);
 }

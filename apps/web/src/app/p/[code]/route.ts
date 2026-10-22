@@ -37,26 +37,30 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ code: strin
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "0.0.0.0";
   const visitor = visitorHash(ip, ua);
   const db = store();
-  const pot = await db.getPot(code);
+  const item = await db.getItem(code);
+  const pot = item ? null : await db.getPot(code);
+  const known = item ?? pot;
 
   try {
-    const first = pot ? !(await db.hasScanned(code, visitor)) : true;
+    const first = known ? !(await db.hasScanned(code, visitor)) : true;
     await db.logScan({
       id: randomUUID(),
       ts: new Date().toISOString(),
       potCode: code,
-      species: pot?.species ?? null,
+      species: item ? item.product : (pot?.species ?? null),
       country: req.headers.get("x-vercel-ip-country") ?? req.headers.get("cf-ipcountry"),
       ...parseUa(ua),
       referrer: req.headers.get("referer"),
       visitor,
       firstScan: first,
-      valid: Boolean(pot),
+      valid: Boolean(known),
     });
   } catch (err) {
     console.error("scan log failed", err); // never block the visitor because analytics failed
   }
 
+  if (!known) return redirect(`/${locale}/pot/unknown`);
+  if (item) return redirect(`/${locale}/garden/${code}`);
   if (!pot) return redirect(`/${locale}/pot/unknown`);
   base.searchParams.set("pot", code);
   base.pathname = `/${locale}/plants/${pot.species}`;

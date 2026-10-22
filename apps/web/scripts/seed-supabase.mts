@@ -19,6 +19,14 @@ async function upsert(table: string, rows: object[]) {
 await upsert("families", families.map((f) => ({ slug: f.slug, data: f })));
 await upsert("species", herbs.map((h) => ({ slug: h.slug, family: h.family, data: h })));
 
-// Every herb is also sold as a single-plant product (baskets are created in the admin).
-await upsert("products", herbs.map((h) => ({ slug: h.slug, kind: "single", status: "published", price_uah: h.priceUah, stock_mode: "made_to_order", data: { names: h.names, tagline: h.tagline } })));
-await upsert("product_species", herbs.map((h) => ({ product: h.slug, species: h.slug, qty: 1 })));
+// Storefront products: one per herb (single plant) plus the baskets (sets) with their composition and care texts.
+import { basketContent } from "../src/data/baskets";
+import { products } from "../src/lib/shop";
+
+await upsert("products", products.map((p) => ({
+  slug: p.slug, kind: p.kind === "set" ? "basket" : "single", status: "published", price_uah: p.priceUah, stock_mode: "made_to_order",
+  data: { titles: p.titleKey ?? null, blurb: p.blurb ?? null },
+})));
+await upsert("product_species", products.flatMap((p) => p.herbs.map((h) => ({ product: p.slug, species: h, qty: 1 }))));
+await upsert("product_content", Object.entries(basketContent).flatMap(([product, sections]) =>
+  Object.entries(sections).flatMap(([section, l]) => (["uk", "en"] as const).map((locale) => ({ product, locale, section, body: l[locale] })))));

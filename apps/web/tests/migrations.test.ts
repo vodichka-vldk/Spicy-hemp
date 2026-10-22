@@ -59,9 +59,13 @@ describe("migration 0002", () => {
     expect(sp).toEqual([{ item: "AAAA2222", species: "basil" }, { item: "BBBB3333", species: "mint" }]);
   });
 
-  it("assigns display numbers for the САД · 001 label", async () => {
-    const r = await rows<{ display_no: number }>("select display_no from items order by display_no");
+  it("numbers items separately per kind for the САД · 001 label", async () => {
+    const r = await rows<{ display_no: number }>("select display_no from items where kind='single' order by display_no");
     expect(r.map((x) => x.display_no)).toEqual([1, 2]);
+    await db.exec(`insert into items (code, kind) values ('CCCC4444','basket'), ('DDDD5555','basket'), ('EEEE6666','single')`);
+    const b = await rows<{ code: string; display_no: number }>("select code, display_no from items where code in ('CCCC4444','DDDD5555','EEEE6666') order by code");
+    expect(b).toEqual([{ code: "CCCC4444", display_no: 1 }, { code: "DDDD5555", display_no: 2 }, { code: "EEEE6666", display_no: 3 }]);
+    await db.exec("delete from items where code in ('CCCC4444','DDDD5555','EEEE6666')");
   });
 
   it("keeps the SQL transition tables in sync with domain.ts", async () => {

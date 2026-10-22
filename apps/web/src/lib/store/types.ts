@@ -1,6 +1,6 @@
 import type { Locale } from "../types";
 
-import type { OrderStatus } from "../domain";
+import type { ItemKind, ItemStatus, OrderStatus } from "../domain";
 export type { OrderStatus };
 export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
@@ -35,6 +35,21 @@ export type Pot = {
   orderId?: string;
 };
 
+/** A physical basket (several herbs) or single plant with one QR code. */
+export type Item = {
+  code: string;
+  kind: ItemKind;
+  product: string; // shop product slug, e.g. "set-tea"
+  species: string[]; // herb slugs in the basket
+  displayNo: number; // numbered per kind: САД · 001
+  batch: string;
+  readyOn: string; // YYYY-MM-DD
+  status: ItemStatus;
+  ownerName?: string; // the name the owner gave the garden
+  photoPath?: string;
+  orderId?: string;
+};
+
 export type ScanEvent = {
   id: string;
   ts: string;
@@ -57,6 +72,10 @@ export interface Store {
   getPot(code: string): Promise<Pot | null>;
   listPots(): Promise<Pot[]>;
   upsertPots(pots: Pot[]): Promise<void>;
+  getItem(code: string): Promise<Item | null>;
+  listItems(): Promise<Item[]>;
+  /** Inserts or updates items; new items get the next display number of their kind. */
+  upsertItems(items: Array<Omit<Item, "displayNo"> & { displayNo?: number }>): Promise<void>;
   logScan(ev: ScanEvent): Promise<void>;
   listScans(sinceIso?: string): Promise<ScanEvent[]>;
   hasScanned(potCode: string, visitor: string): Promise<boolean>;

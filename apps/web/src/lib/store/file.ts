@@ -2,9 +2,10 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { getHerbs } from "../content";
 import { makeCode, seeded } from "../pots";
-import type { Order, Pot, ScanEvent, Store } from "./types";
+import { getProduct } from "../shop";
+import type { Item, Order, Pot, ScanEvent, Store } from "./types";
 
-type Db = { orders: Order[]; pots: Pot[]; scans: ScanEvent[] };
+type Db = { orders: Order[]; pots: Pot[]; items: Item[]; scans: ScanEvent[] };
 
 const FILE = path.join(process.cwd(), ".data", "store.json");
 
@@ -26,11 +27,26 @@ export function demoPots(): Pot[] {
   }));
 }
 
+/** One demo basket per set, so the card can be tried right away. */
+export function demoItems(): Item[] {
+  const rand = seeded(20261022);
+  return ["set-tea", "set-italian", "set-asian"].flatMap((slug, i) => {
+    const product = getProduct(slug);
+    if (!product) return [];
+    return [{
+      code: makeCode(rand), kind: "basket" as const, product: slug, species: product.herbs, displayNo: i + 1,
+      batch: "DEMO-BASKET", readyOn: "2026-08-20", status: "ready_for_sale" as const,
+    }];
+  });
+}
+
 async function read(): Promise<Db> {
   try {
-    return JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
+    const db = JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
+    if (!db.items) { db.items = demoItems(); await write(db); }
+    return db;
   } catch {
-    const db: Db = { orders: [], pots: demoPots(), scans: [] };
+    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), scans: [] };
     await write(db);
     return db;
   }
@@ -64,6 +80,19 @@ export const fileStore: Store = {
       for (const p of pots) {
         const i = db.pots.findIndex((x) => x.code === p.code);
         if (i >= 0) db.pots[i] = p; else db.pots.push(p);
+      }
+      await write(db);
+    }),
+  getItem: (code) => serial(async () => (await read()).items.find((i) => i.code === code) ?? null),
+  listItems: () => serial(async () => (await read()).items),
+  upsertItems: (items) =>
+    serial(async () => {
+      const db = await read();
+      for (const it of items) {
+        const i = db.items.findIndex((x) => x.code === it.code);
+        if (i >= 0) { db.items[i] = { ...db.items[i], ...it, displayNo: db.items[i].displayNo }; continue; }
+        const next = Math.max(0, ...db.items.filter((x) => x.kind === it.kind).map((x) => x.displayNo)) + 1;
+        db.items.push({ ...it, displayNo: it.displayNo ?? next });
       }
       await write(db);
     }),

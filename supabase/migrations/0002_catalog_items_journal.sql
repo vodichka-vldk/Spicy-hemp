@@ -74,10 +74,10 @@ create table public.product_content (            -- care sections shown on the c
 -- ---------- items: a physical basket/pot with a QR code ----------
 create table public.items (
   code text primary key check (code ~ '^[2-9A-HJ-NP-Z]{8}$'),   -- same alphabet as legacy pots
-  display_no integer generated always as identity unique,      -- shown as "САД · 001"
+  display_no integer not null default 0,                       -- numbered per kind, shown as "САД · 001" / "РОСЛИНА · 001"
   product text references public.products (slug),              -- null for legacy single pots
   kind text not null check (kind in ('basket','single')),
-  batch text references public.batches (code),
+  batch text,
   status text not null default 'draft' check (status in
     ('draft','ready_for_sale','reserved','sold','shipped','delivered','activated','returned','written_off','archived')),
   ready_on date,
@@ -88,8 +88,19 @@ create table public.items (
   photo_path text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check ((owner_id is null) = (activated_at is null))
+  check ((owner_id is null) = (activated_at is null)),
+  unique (kind, display_no)
 );
+create sequence public.items_basket_no_seq;
+create sequence public.items_single_no_seq;
+create or replace function public.assign_item_no() returns trigger language plpgsql as $$
+begin
+  if new.display_no = 0 then
+    new.display_no := case new.kind when 'basket' then nextval('public.items_basket_no_seq') else nextval('public.items_single_no_seq') end;
+  end if;
+  return new;
+end $$;
+create trigger items_assign_no before insert on public.items for each row execute function public.assign_item_no();
 create index items_status_idx on public.items (status);
 create index items_order_idx on public.items (order_id);
 create index items_owner_idx on public.items (owner_id);

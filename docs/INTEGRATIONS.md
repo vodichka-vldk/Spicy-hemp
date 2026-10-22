@@ -8,7 +8,7 @@
 | База даних | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, міграції `0001` і `0002` | локальний файл `.data/store.json` (лише розробка) |
 | Контент з Notion | `NOTION_TOKEN`, `NOTION_DB_SPECIES`, `NOTION_DB_FAMILIES` | вбудовані 15 трав |
 | Оплата карткою | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `LIQPAY_PUBLIC_KEY`, `LIQPAY_PRIVATE_KEY` | лише оплата при отриманні |
-| Повідомлення Каті в Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` | повідомлень немає, замовлення видно в адмінці |
+| Повідомлення Каті в Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` | повідомлень немає, замовлення видно в адмінці. Сповіщення лише про нові замовлення й оплати |
 | Нова пошта: вибір міста й відділення | `NOVA_POSHTA_API_KEY` | на оформленні звичайні текстові поля |
 | Нова пошта: автоматична ТТН | ще `NP_SENDER_CITY_REF`, `NP_SENDER_REF`, `NP_SENDER_ADDRESS_REF`, `NP_SENDER_CONTACT_REF`, `NP_SENDER_PHONE` | ТТН вводиться вручну |
 

@@ -11,12 +11,8 @@ export type FlowResult = { ok: true; order: Order } | { ok: false; reason: "not_
 const ITEM_FOLLOWS: Partial<Record<OrderStatus, ItemStatus>> = { shipped: "shipped", delivered: "delivered", returned: "returned" };
 
 const text: Partial<Record<OrderStatus, string>> = {
+  // Katya is notified only about new orders (registerNewOrder) and payments
   paid: "💰 Оплачено",
-  payment_failed: "⚠️ Оплата не пройшла",
-  cod_confirmed: "✅ Підтверджено (оплата при отриманні)",
-  cancelled: "❌ Скасовано",
-  return_requested: "↩️ Запит на повернення товару",
-  refund_requested: "💸 Запит на повернення коштів",
 };
 
 async function syncItems(db: Store, order: Order, to: OrderStatus) {

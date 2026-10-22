@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildOrder, validateOrder } from "@/lib/orders";
+import { buildOrder, providerReady, validateOrder } from "@/lib/orders";
 import { registerNewOrder } from "@/lib/order-flow";
 import { createStripeSession, siteUrl } from "@/lib/payments";
 import { store } from "@/lib/store";
@@ -21,8 +21,8 @@ export async function POST(req: Request) {
 
   let redirect = `${siteUrl()}/${order.locale}/order/${order.id}`;
   try {
-    if (order.payment === "stripe") redirect = await createStripeSession(order);
-    if (order.payment === "liqpay") redirect = `${siteUrl()}/api/pay/liqpay/${order.id}`;
+    if (order.payment === "stripe" && providerReady("stripe")) redirect = await createStripeSession(order);
+    if (order.payment === "liqpay" && providerReady("liqpay")) redirect = `${siteUrl()}/api/pay/liqpay/${order.id}`;
   } catch (err) {
     console.error("payment init failed", err);
     return NextResponse.json({ error: "payment_init", orderId: order.id }, { status: 502 });

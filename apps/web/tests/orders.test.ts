@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { buildOrder, newOrderId, paymentMethodsFor, validateOrder } from "@/lib/orders";
+import { buildOrder, newOrderId, paymentMethodsFor, providerReady, validateOrder } from "@/lib/orders";
 
 const good = {
   locale: "uk",
@@ -69,15 +69,19 @@ describe("payment methods", () => {
   const saved = { ...process.env };
   afterEach(() => { process.env = { ...saved }; });
 
-  it("offers only cash on delivery without provider keys", () => {
+  it("always offers card prepayment by currency, with or without provider keys", () => {
     delete process.env.STRIPE_SECRET_KEY; delete process.env.LIQPAY_PUBLIC_KEY; delete process.env.LIQPAY_PRIVATE_KEY;
-    expect(paymentMethodsFor({ shippingKind: "np", currency: "UAH" })).toEqual(["cod"]);
-    expect(paymentMethodsFor({ shippingKind: "intl", currency: "EUR" })).toEqual([]);
+    expect(paymentMethodsFor({ shippingKind: "np", currency: "UAH" })).toEqual(["cod", "liqpay"]);
+    expect(paymentMethodsFor({ shippingKind: "intl", currency: "EUR" })).toEqual(["stripe"]);
   });
 
-  it("adds providers by currency when configured", () => {
+  it("reports whether a provider is ready to take payments", () => {
+    delete process.env.STRIPE_SECRET_KEY; delete process.env.LIQPAY_PUBLIC_KEY; delete process.env.LIQPAY_PRIVATE_KEY;
+    expect(providerReady("stripe")).toBe(false);
+    expect(providerReady("liqpay")).toBe(false);
     process.env.STRIPE_SECRET_KEY = "sk"; process.env.LIQPAY_PUBLIC_KEY = "pk"; process.env.LIQPAY_PRIVATE_KEY = "sk2";
-    expect(paymentMethodsFor({ shippingKind: "intl", currency: "EUR" })).toEqual(["stripe"]);
-    expect(paymentMethodsFor({ shippingKind: "np", currency: "UAH" })).toEqual(["cod", "liqpay"]);
+    expect(providerReady("stripe")).toBe(true);
+    expect(providerReady("liqpay")).toBe(true);
+    expect(providerReady("cod")).toBe(false);
   });
 });

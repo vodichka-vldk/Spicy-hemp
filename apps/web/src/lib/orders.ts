@@ -32,9 +32,16 @@ export function isPhone(raw: string): boolean {
 export function paymentMethodsFor(opts: { shippingKind: "np" | "intl"; currency: "UAH" | "EUR" }): PaymentMethod[] {
   const out: PaymentMethod[] = [];
   if (opts.shippingKind === "np") out.push("cod");
-  if (process.env.STRIPE_SECRET_KEY && opts.currency === "EUR") out.push("stripe");
-  if (process.env.LIQPAY_PUBLIC_KEY && process.env.LIQPAY_PRIVATE_KEY && opts.currency === "UAH") out.push("liqpay");
+  // card prepayment is always offered; without provider keys the order waits for a payment link (see providerReady)
+  out.push(opts.currency === "EUR" ? "stripe" : "liqpay");
   return out;
+}
+
+/** True when the payment provider's keys are set, i.e. the "Pay now" flow can start automatically. */
+export function providerReady(method: PaymentMethod): boolean {
+  if (method === "stripe") return !!process.env.STRIPE_SECRET_KEY;
+  if (method === "liqpay") return !!(process.env.LIQPAY_PUBLIC_KEY && process.env.LIQPAY_PRIVATE_KEY);
+  return false;
 }
 
 export function validateOrder(input: unknown): { ok: true; value: OrderInput } | { ok: false; errors: FieldErrors } {

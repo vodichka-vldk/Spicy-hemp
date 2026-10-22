@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, t, type DictKey } from "@/lib/i18n";
+import { providerReady } from "@/lib/orders";
 import { formatMoney } from "@/lib/shop-calc";
 import { store } from "@/lib/store";
 
@@ -25,7 +26,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
       <p className="mt-1"><span className="badge">{t(locale, `status_${order.status}` as DictKey)}</span></p>
 
       {pay === "failed" && <p role="alert" className="mt-4 rounded-lg bg-soft p-3 font-semibold text-clay">{t(locale, "pay_failed_note")}</p>}
-      {unpaid && <a href={`/api/pay/${order.payment}/${order.id}`} className="btn btn-primary mt-4">💳 {t(locale, "pay_now")}</a>}
+      {unpaid && providerReady(order.payment) && <a href={`/api/pay/${order.payment}/${order.id}`} className="btn btn-primary mt-4">💳 {t(locale, "pay_now")}</a>}
+      {unpaid && !providerReady(order.payment) && <p className="mt-4 rounded-lg bg-soft p-3 text-sm">{t(locale, "pay_link_soon")}</p>}
       {order.shipment && (
         <p className="mt-4 text-sm">
           {t(locale, "parcel_ttn")}: <span className="font-mono font-semibold">{order.shipment.ttn}</span>{" "}

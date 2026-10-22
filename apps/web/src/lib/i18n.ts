@@ -210,6 +210,7 @@ export const dict = {
   item_status_written_off: d("Знято з обліку", "Retired"),
   item_status_archived: d("В архіві", "Archived"),
   pay_now: d("Оплатити зараз", "Pay now"),
+  pay_link_soon: d("Онлайн-оплата поки не підключена. Катя надішле вам посилання на оплату.", "Online payment is not connected yet. Katya will send you a payment link."),
   pay_failed_note: d("Не вдалося почати оплату. Спробуйте ще раз.", "We could not start the payment. Please try again."),
   track_parcel: d("Відстежити посилку", "Track parcel"),
   parcel_ttn: d("ТТН Нової пошти", "Nova Poshta waybill"),

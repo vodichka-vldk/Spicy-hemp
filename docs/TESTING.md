@@ -8,8 +8,9 @@ npm run typecheck     # типы
 npm test              # 54 теста: контент, коды, цены, заказы, платежи, Notion-маппинг, статистика, миграции и RLS (PGlite)
 npm run build         # production-сборка
 # сквозной тест в браузере (нужен запущенный сервер и демо-данные):
-ADMIN_PASSWORD=test123 npm run build && ADMIN_PASSWORD=test123 npx next start -p 3100 &
-node tests/e2e/smoke.mjs
+ENVV="ADMIN_PASSWORD=test123 ADMIN_EMAIL=admin TELEGRAM_BOT_TOKEN=123456:E2E TELEGRAM_WEBHOOK_SECRET=e2e-secret NEXT_PUBLIC_SITE_URL=http://localhost:3100"
+env $ENVV npm run build && env $ENVV npx next start -p 3100 &
+BASE=http://localhost:3100 TELEGRAM_BOT_TOKEN=123456:E2E TELEGRAM_WEBHOOK_SECRET=e2e-secret node tests/e2e/smoke.mjs
 ```
 
 Сквозной тест (iPhone 13 + десктоп) проходит: перенаправление языка, поиск и фильтры, сканирование QR, баннер горшка, `.ics` напоминание, неверный код, корзина, валидацию формы, заказ, страницу заказа без персональных данных, переключатель языка, админку (вход, партии, выдачу QR горшков, аналитику, печатный лист QR), sitemap/robots, отсутствие горизонтального скролла и ошибок в консоли.

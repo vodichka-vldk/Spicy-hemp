@@ -3,9 +3,10 @@ import path from "node:path";
 import { getHerbs } from "../content";
 import { makeCode, seeded } from "../pots";
 import { getProduct } from "../shop";
-import type { CatalogEntry, Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
+import { randomUUID } from "node:crypto";
+import type { CatalogEntry, Item, Owner, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
-type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; catalog: CatalogEntry[]; orderEvents: OrderEvent[]; scans: ScanEvent[] };
+type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; catalog: CatalogEntry[]; owners: Owner[]; settings: Record<string, unknown>; orderEvents: OrderEvent[]; scans: ScanEvent[] };
 
 const FILE = path.join(process.cwd(), ".data", "store.json");
 
@@ -43,10 +44,10 @@ export function demoItems(): Item[] {
 async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
-    if (!db.items || !db.reviews || !db.orderEvents || !db.catalog) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; db.catalog ??= []; await write(db); }
+    if (!db.items || !db.reviews || !db.orderEvents || !db.catalog || !db.owners || !db.settings) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; db.catalog ??= []; db.owners ??= []; db.settings ??= {}; await write(db); }
     return db;
   } catch {
-    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], catalog: [], orderEvents: [], scans: [] };
+    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], catalog: [], owners: [], settings: {}, orderEvents: [], scans: [] };
     await write(db);
     return db;
   }
@@ -107,6 +108,18 @@ export const fileStore: Store = {
       if (i >= 0) db.reviews[i] = review; else db.reviews.push(review);
       await write(db);
     }),
+  getOwnerByTelegram: (tid) => serial(async () => (await read()).owners.find((o) => o.telegramId === tid) ?? null),
+  upsertOwner: (o) =>
+    serial(async () => {
+      const db = await read();
+      const i = db.owners.findIndex((x) => x.telegramId === o.telegramId);
+      const next: Owner = { ...(i >= 0 ? db.owners[i] : { id: randomUUID(), createdAt: new Date().toISOString() }), ...o, id: i >= 0 ? db.owners[i].id : o.id ?? randomUUID() } as Owner;
+      if (i >= 0) db.owners[i] = next; else db.owners.push(next);
+      await write(db);
+      return next;
+    }),
+  getSetting: (key) => serial(async () => ((await read()).settings[key] ?? null) as never),
+  setSetting: (key, value) => serial(async () => { const db = await read(); if (value === null) delete db.settings[key]; else db.settings[key] = value; await write(db); }),
   listCatalog: () => serial(async () => (await read()).catalog),
   upsertCatalogEntry: (entry) =>
     serial(async () => {

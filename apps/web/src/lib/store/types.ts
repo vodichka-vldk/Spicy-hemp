@@ -78,6 +78,19 @@ export type Item = {
   ownerName?: string; // the name the owner gave the pot
   photoPath?: string;
   orderId?: string;
+  ownerId?: string; // set when a buyer activates the pot in Telegram
+  activatedAt?: string;
+};
+
+/** A buyer, identified by Telegram only. */
+export type Owner = {
+  id: string;
+  telegramId: number;
+  username?: string;
+  firstName?: string;
+  locale: Locale;
+  notify: boolean;
+  createdAt: string;
 };
 
 /** A customer review; public only when the author agreed (consentPublic) and an admin approved it. */
@@ -148,6 +161,11 @@ export interface Store {
   listReviews(filter?: { product?: string; status?: ReviewStatus }): Promise<Review[]>;
   /** Approving requires consentPublic; the store refuses otherwise. */
   upsertReview(review: Review): Promise<void>;
+  getOwnerByTelegram(telegramId: number): Promise<Owner | null>;
+  /** Inserts or updates by telegramId and returns the stored owner. */
+  upsertOwner(owner: Omit<Owner, "id" | "createdAt"> & { id?: string }): Promise<Owner>;
+  getSetting<T = unknown>(key: string): Promise<T | null>;
+  setSetting(key: string, value: unknown | null): Promise<void>;
   listCatalog(): Promise<CatalogEntry[]>;
   upsertCatalogEntry(entry: CatalogEntry): Promise<void>;
   deleteCatalogEntry(slug: string): Promise<void>;

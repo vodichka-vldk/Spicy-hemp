@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/pots", label: "Горщики й QR", icon: "🏺" },
   { href: "/admin/reviews", label: "Відгуки", icon: "⭐" },
   { href: "/admin/analytics", label: "Аналітика", icon: "📈" },
+  { href: "/admin/telegram", label: "Telegram", icon: "✈️" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -25,6 +25,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/p/") ||
+    pathname === "/app" ||
     PUBLIC_FILE.test(pathname)
   ) {
     return NextResponse.next();

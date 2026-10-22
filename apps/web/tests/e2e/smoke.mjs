@@ -239,6 +239,55 @@ ok((await ap.locator(".qr svg").count()) >= 1, "printable QR sheet renders");
 const unauth = await (await browser.newContext()).request.get(BASE + "/admin/orders");
 ok(unauth.url().includes("/admin/login"), "admin requires authentication");
 
+// 8c. Telegram: webhook secret, Mini App sign-in, activation, naming
+import crypto from "node:crypto";
+const BOT = process.env.TELEGRAM_BOT_TOKEN ?? "123456:E2E";
+const initFor = (id, startParam) => {
+  const f = { auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: "Олена", language_code: "uk" }), ...(startParam ? { start_param: startParam } : {}) };
+  const check = Object.entries(f).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`).join("\n");
+  const secret = crypto.createHmac("sha256", "WebAppData").update(BOT).digest();
+  return new URLSearchParams({ ...f, hash: crypto.createHmac("sha256", secret).update(check).digest("hex") }).toString();
+};
+const api = (path, init, body) => ctx.request.post(BASE + path, { headers: { "Content-Type": "application/json", ...(init ? { Authorization: `tma ${init}` } : {}) }, data: body ?? {} });
+ok((await api("/api/app/me")).status() === 401, "Mini App API refuses requests without Telegram data");
+ok((await api("/api/app/me", initFor(1).replace(/hash=[0-9a-f]{64}/, "hash=" + "0".repeat(64)))).status() === 401, "Mini App API refuses forged Telegram data");
+ok((await ctx.request.post(BASE + "/api/telegram/webhook", { data: {} })).status() === 403, "bot webhook rejects calls without the secret");
+ok((await ctx.request.post(BASE + "/api/telegram/webhook", { headers: { "x-telegram-bot-api-secret-token": "wrong" }, data: {} })).status() === 403, "bot webhook rejects a wrong secret");
+ok((await ctx.request.post(BASE + "/api/telegram/webhook", { headers: { "x-telegram-bot-api-secret-token": process.env.TELEGRAM_WEBHOOK_SECRET ?? "e2e-secret" }, data: {} })).status() === 200, "bot webhook accepts the secret");
+
+const storeFile = ".data/store.json";
+const dbJson = JSON.parse(fs.readFileSync(storeFile, "utf8"));
+const target = dbJson.items.filter((i) => /^E2EK/.test(i.batch) && !i.ownerId && i.status === "ready_for_sale").pop();
+const code = target.code;
+target.status = "sold";
+fs.writeFileSync(storeFile, JSON.stringify(dbJson));
+
+const outside = await browser.newContext({ viewport: { width: 390, height: 800 }, locale: "uk-UA" });
+const op = await outside.newPage();
+await op.route("**/telegram.org/**", (r) => r.abort());
+await op.goto(BASE + "/app");
+await op.getByText(/Відкрийте цю сторінку з Telegram-бота/).waitFor();
+ok(true, "the Mini App page explains how to open it outside Telegram");
+
+const tg = await browser.newContext({ viewport: { width: 390, height: 800 } });
+await tg.addInitScript((initData) => { window.Telegram = { WebApp: { initData, ready() {}, expand() {} } }; }, initFor(4242, code));
+await tg.route("**/telegram.org/**", (r) => r.abort());
+const mp = await tg.newPage();
+await mp.goto(BASE + "/app");
+await mp.getByText(`Додати горщик ${code} до вашого списку?`).waitFor();
+await mp.getByRole("button", { name: "Так, це мій" }).click();
+await mp.getByLabel("Ім'я горщика").waitFor();
+ok((await mp.getByText(/ГОРЩИК · \d{3}/).count()) >= 1, "the owner activates a pot from the QR link and sees it in the list");
+await mp.getByLabel("Ім'я горщика").fill("Зелений сніданок");
+await mp.getByRole("button", { name: "Зберегти" }).click();
+await mp.getByText("Збережено").waitFor();
+await mp.reload();
+await mp.getByRole("heading", { name: "Зелений сніданок" }).or(mp.getByText("Зелений сніданок", { exact: true })).first().waitFor();
+ok(true, "the name given to the pot is kept");
+ok((await api("/api/app/activate", initFor(9999), { code })).status() === 409, "another buyer cannot take an activated pot");
+ok((await api("/api/app/rename", initFor(9999), { code, name: "Моє" })).status() === 404, "another buyer cannot rename it");
+ok((await api("/api/app/activate", initFor(9999), { code: "ZZZZ2222" })).status() === 400, "a mistyped code (bad check character) is refused");
+
 // 9. SEO endpoints
 const sm = await (await ctx.request.get(BASE + "/sitemap.xml")).text();
 ok(sm.includes("/uk/plants/basil") && sm.includes("hreflang") || sm.includes("xhtml:link"), "sitemap includes plants with alternates");

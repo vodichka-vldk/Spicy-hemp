@@ -80,9 +80,9 @@ export default async function PlantPage({ params }: P) {
 
       <section className="mt-8" aria-label={t(locale, "quick_facts")}><QuickFacts herb={h} locale={locale} /></section>
 
-      <nav aria-label="Sections" className="sticky top-14 z-30 -mx-4 mt-8 flex gap-2 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur sm:mx-0 sm:px-0">
+      <nav aria-label="Sections" className="sh-chiprow mt-8">
         {[["care", "tab_care"], ["problems", "tab_problems"], ["uses", "tab_uses"], ["varieties", "sec_varieties"]].map(([id, k]) => (
-          <a key={id} href={`#${id}`} className="sh-chip label no-underline">{t(locale, k as "tab_care")}</a>
+          <Chip key={id} href={`#${id}`}>{t(locale, k as "tab_care")}</Chip>
         ))}
       </nav>
 

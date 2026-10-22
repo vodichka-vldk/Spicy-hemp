@@ -71,3 +71,12 @@ details.acc > .acc-body { padding: 0 var(--space-1) var(--space-5); color: var(-
 /* Native file picker styled like a design-system secondary button */
 input[type="file"] { font: inherit; color: var(--ink-muted); max-width: 100%; }
 input[type="file"]::file-selector-button { min-height: var(--tap-target); margin-right: var(--space-3); padding: 0 var(--space-5); border: 2px solid var(--btn-edge); border-radius: var(--radius-pill); background: var(--bg-card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-pill); }
+
+/* Grid children may shrink below their content, so one wide item cannot stretch the whole page past the viewport */
+.sh-stack, .sh-stack-lg { grid-template-columns: minmax(0, 1fr); }
+.sh-grid > *, .sh-split-main, .sh-split-aside, .sh-plantcard, .sh-product { min-width: 0; }
+.sh-plantcard-text { min-width: 0; overflow-wrap: anywhere; }
+.sh-fact { min-width: 0; }
+.sh-fact-text { overflow-wrap: anywhere; }
+input[type="file"] { width: 100%; min-width: 0; }
+.overline { overflow-wrap: anywhere; }

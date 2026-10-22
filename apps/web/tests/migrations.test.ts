@@ -43,6 +43,7 @@ beforeAll(async () => {
       ('BBBB3333','mint','B-1','2026-08-20','sold','SH-2');
   `);
   await db.exec(sql("0002_catalog_items_journal.sql"));
+  await db.exec(sql("0003_catalog_photos.sql"));
   await db.exec(GRANTS);
 });
 
@@ -166,5 +167,44 @@ describe("row level security", () => {
     const stranger = "22222222-2222-2222-2222-222222222222";
     expect(await as("authenticated", stranger, "select 1 from journal_entries")).toEqual([]);
     expect(await as("authenticated", stranger, "select 1 from orders")).toEqual([]);
+  });
+});
+
+describe("0003: reminders per herb, built-in products by slug, settings", () => {
+  const owner = "11111111-1111-1111-1111-111111111111";
+  const ownerSetup = async () => {
+    await db.exec(`insert into owners (id, telegram_id) values ('${owner}', 4242424242) on conflict do nothing;`);
+    await db.exec(`insert into items (code, kind, product, status, ready_on) values ('R3MD2222','basket','set-tea','activated','2026-08-01') on conflict do nothing;`).catch(() => undefined);
+  };
+
+  it("items and reviews may refer to a built-in product that has no products row", async () => {
+    await db.exec(`insert into items (code, kind, product, batch, status, ready_on) values ('FREE2222','basket','set-never-seeded','B','ready_for_sale','2026-08-01')`);
+    expect((await rows<{ product: string }>(`select product from items where code = 'FREE2222'`))[0].product).toBe("set-never-seeded");
+    await db.exec(`insert into reviews (product, rating, consent_public, status) values ('basil', 5, true, 'approved')`);
+  });
+
+  it("reminders: one per herb, the review task is allowed, unknown tasks are not", async () => {
+    await ownerSetup();
+    await db.exec(`update items set owner_id='${owner}', activated_at=now(), status='activated' where code='FREE2222'`).catch(() => undefined);
+    const ins = (task: string, species: string | null, due = "2026-09-01T09:00:00Z") =>
+      db.exec(`insert into reminders (item_code, owner_id, task, species, due_at) values ('FREE2222','${owner}','${task}',${species ? `'${species}'` : "null"},'${due}')`);
+    await ins("water", "basil");
+    await ins("water", "mint"); // same task and time, another herb: allowed
+    await expect(ins("water", "basil")).rejects.toThrow(); // duplicate for the same herb and time
+    await ins("review", null);
+    await expect(ins("dance", null, "2026-09-02T09:00:00Z")).rejects.toThrow();
+  });
+
+  it("questions keep the symptom the owner picked", async () => {
+    const cols = (await rows<{ column_name: string }>(`select column_name from information_schema.columns where table_name='questions'`)).map((r) => r.column_name);
+    expect(cols).toContain("symptom");
+  });
+
+  it("app_settings is server-only: row level security hides it from public roles", async () => {
+    await db.exec(`insert into app_settings (key, value) values ('telegram_admin_ids', '[1]')`);
+    await db.exec("set role anon");
+    const seen = await rows(`select * from app_settings`);
+    await db.exec("reset role");
+    expect(seen).toHaveLength(0);
   });
 });

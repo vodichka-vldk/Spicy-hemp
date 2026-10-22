@@ -2,7 +2,7 @@
 
 Ручные горшки с пряными травами. На каждом горшке уникальный QR-код, который открывает «паспорт» растения: уход, параметры, проблемы, применение и связи по семействам. Каждый скан попадает в аналитику. В проект входит интернет-магазин.
 
-**Статус: готово к тестированию (v0.1).** Работает без внешних сервисов; Notion, Supabase и платёжные системы подключаются через переменные окружения.
+**Статус: функционально готов к запуску (v1.0-rc).** Сайт, магазин, Telegram-бот с Mini App, журнал, нагадування, відгуки, питання, адмінка. Работает без внешних сервисов; Supabase, Telegram, Нова пошта и платёжные системы подключаются через переменные окружения. Деплой: `docs/DEPLOY.md`, план и критерии: `docs/PIPELINE.md`.
 
 ## Быстрый старт
 
@@ -34,6 +34,7 @@ npm run dev                    # http://localhost:3000
 - [Архитектура](docs/ARCHITECTURE.md), [Каталог трав](docs/CATALOG.md)
 - [Анализ рынка](docs/MARKET.md), [UX-анализ](docs/UX.md)
 - [Шаблон Notion](docs/NOTION.md), [Чек-лист тестирования](docs/TESTING.md)
+- [Дизайн-система](docs/DESIGN.md), [Админка](docs/ADMIN.md), [Telegram](docs/TELEGRAM.md), [Интеграции](docs/INTEGRATIONS.md), [Деплой](docs/DEPLOY.md), [Пайплайн](docs/PIPELINE.md)
 
 ## Команды (в `apps/web`)
 
@@ -42,7 +43,7 @@ npm run dev                    # http://localhost:3000
 | `npm run dev` / `build` / `start` | разработка / сборка / production |
 | `npm run typecheck` | проверка типов |
 | `npm test` | юнит-тесты (vitest) |
-| `node tests/e2e/smoke.mjs` | сквозной тест в Chromium (сервер на `BASE`, по умолчанию :3100) |
+| `npm run e2e` | чистая сборка, сервер, сквозной тест в Chromium и аудит сайта (доступность, переполнение, консоль) |
 | `npm run pots:generate -- basil 40 B-2026-10` | партия горшков с кодами (CSV в stdout) |
 | `npm run sync:notion` | Notion → `src/data/generated/content.json` (+ Supabase) |
 

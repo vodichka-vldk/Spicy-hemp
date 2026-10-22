@@ -109,6 +109,21 @@ await page.goto(`${BASE}/uk/cart`);
 await page.getByRole("heading", { name: "Кошик порожній" }).waitFor();
 ok(true, "cart cleared after ordering");
 
+// 5b. English storefront: international order paid by card (no Stripe key: the order waits for a payment link)
+const en = await browser.newContext({ ...devices["iPhone 13"], locale: "en-GB", extraHTTPHeaders: { "Accept-Language": "en-GB" } });
+const ep = await en.newPage();
+await ep.goto(`${BASE}/en/shop/basil`);
+await ep.getByRole("button", { name: /Add to cart/i }).click();
+await ep.goto(`${BASE}/en/checkout`);
+await ep.fill("#f-name", "Anna Smith"); await ep.fill("#f-email", "anna@example.com"); await ep.fill("#f-phone", "+4915112345678");
+await ep.fill("#f-country", "Germany"); await ep.fill("#f-city", "Berlin"); await ep.fill("#f-address", "Hauptstrasse 1"); await ep.fill("#f-postcode", "10115");
+await ep.locator("#f-agree").check({ force: true });
+await ep.locator('button[type="submit"]').click();
+await ep.waitForURL(/\/en\/order\/SH-/);
+ok(await ep.getByText(/Online payment is not connected yet/).isVisible(), "an English card order is created and waits for a payment link when no provider is configured");
+ok((await ep.content()).includes("€"), "English storefront prices in euro");
+await en.close();
+
 // 6. language switch keeps the path
 await page.goto(`${BASE}/uk/plants/rosemary`);
 await page.getByRole("button", { name: "EN" }).click();

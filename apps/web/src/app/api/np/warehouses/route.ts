@@ -5,7 +5,7 @@ import { listWarehouses, novaPoshtaConfigured } from "@/lib/novaposhta";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  if (!novaPoshtaConfigured()) return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  if (!novaPoshtaConfigured()) return NextResponse.json({ enabled: false, warehouses: [] }); // not an error: checkout falls back to text fields
   const sp = new URL(req.url).searchParams;
   const city = sp.get("city") ?? "";
   if (!isRef(city)) return NextResponse.json({ error: "bad_city" }, { status: 400 });

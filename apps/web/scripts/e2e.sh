@@ -14,3 +14,4 @@ trap 'kill $PID 2>/dev/null || true' EXIT
 for _ in $(seq 1 60); do curl -fs "http://localhost:$PORT/api/health" > /dev/null && break; sleep 1; done
 curl -fs "http://localhost:$PORT/api/health" > /dev/null || { echo "server did not start"; cat /tmp/sh-e2e-server.log; exit 1; }
 BASE="http://localhost:$PORT" node tests/e2e/smoke.mjs
+BASE="http://localhost:$PORT" node tests/e2e/audit.mjs

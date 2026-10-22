@@ -1,6 +1,6 @@
 import type { Locale } from "../types";
 
-import type { CareSection, ItemKind, ItemStatus, OrderStatus, ReviewStatus } from "../domain";
+import type { CareSection, CareTask, ItemKind, ItemStatus, OrderStatus, QuestionStatus, ReminderStatus, ReviewStatus } from "../domain";
 export type { OrderStatus };
 export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
@@ -90,6 +90,36 @@ export type Owner = {
   firstName?: string;
   locale: Locale;
   notify: boolean;
+  timezone?: string; // IANA, default Europe/Kyiv
+  quietFrom?: string; // "21:00": no reminders between quietFrom and quietUntil
+  quietUntil?: string; // "08:00"
+  createdAt: string;
+};
+
+export type ReminderTask = CareTask | "review";
+
+/** A scheduled nudge to an owner: per herb for care tasks, or the one-off review request. */
+export type Reminder = {
+  id: string;
+  itemCode: string;
+  ownerId: string;
+  task: ReminderTask;
+  species?: string;
+  dueAt: string;
+  status: ReminderStatus;
+  sentAt?: string;
+  doneAt?: string;
+};
+
+export type Question = {
+  id: string;
+  itemCode: string;
+  ownerId: string;
+  body: string;
+  symptom?: string; // key of a common problem the owner picked
+  status: QuestionStatus;
+  answer?: string;
+  answeredAt?: string;
   createdAt: string;
 };
 
@@ -163,7 +193,13 @@ export interface Store {
   upsertReview(review: Review): Promise<void>;
   getOwnerByTelegram(telegramId: number): Promise<Owner | null>;
   /** Inserts or updates by telegramId and returns the stored owner. */
+  listOwners(): Promise<Owner[]>;
   upsertOwner(owner: Omit<Owner, "id" | "createdAt"> & { id?: string }): Promise<Owner>;
+  listReminders(filter?: { itemCode?: string; ownerId?: string; statuses?: ReminderStatus[] }): Promise<Reminder[]>;
+  upsertReminders(reminders: Reminder[]): Promise<void>;
+  listQuestions(filter?: { itemCode?: string; ownerId?: string; status?: QuestionStatus }): Promise<Question[]>;
+  getQuestion(id: string): Promise<Question | null>;
+  upsertQuestion(q: Question): Promise<void>;
   getSetting<T = unknown>(key: string): Promise<T | null>;
   setSetting(key: string, value: unknown | null): Promise<void>;
   listCatalog(): Promise<CatalogEntry[]>;

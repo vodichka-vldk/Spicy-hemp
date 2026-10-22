@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type Item = { code: string; label: string; name: string | null; title: string | null; activatedAt: string | null };
-type Me = { owner: { firstName: string | null; locale: "uk" | "en" }; items: Item[]; startParam: string | null };
+type Q = { id: string; body: string; answer: string | null; status: string; createdAt: string };
+type Item = { code: string; label: string; name: string | null; title: string | null; activatedAt: string | null; questions: Q[] };
+type Symptom = { key: string; label: string };
+type Me = { owner: { firstName: string | null; locale: "uk" | "en" }; items: Item[]; symptoms: Symptom[]; startParam: string | null };
 type Tg = { WebApp?: { initData?: string; ready?: () => void; expand?: () => void } };
 
 const TEXT = {
@@ -13,6 +15,7 @@ const TEXT = {
     confirmQ: (c: string) => `Додати горщик ${c} до вашого списку?`, confirm: "Так, це мій", notFound: "Такого горщика не знайдено.", taken: "Цей горщик уже належить комусь іншому.",
     notSold: "Цей горщик ще не продано, тому додати його не можна.", openIn: "Відкрийте цю сторінку з Telegram-бота, щоб побачити свої горщики.", error: "Щось пішло не так. Спробуйте ще раз.", loading: "Завантаження…",
     addCode: "Додати за кодом", codePh: "Код з наклейки", add: "Додати",
+    ask: "Запитати Катю", askPh: "Опишіть, що вас турбує", symptom: "Що сталося?", other: "Інше", send: "Надіслати", sent: "Питання надіслано Каті.", firstAid: "Перша допомога", waiting: "Чекає на відповідь", katya: "Катя",
   },
   en: {
     title: "My pots", hello: (n: string | null) => (n ? `Hi, ${n}!` : "Hi!"), empty: "You have no pots yet. Scan the QR code on your pot and it will show up here.",
@@ -20,6 +23,7 @@ const TEXT = {
     confirmQ: (c: string) => `Add pot ${c} to your list?`, confirm: "Yes, it's mine", notFound: "We could not find this pot.", taken: "This pot already belongs to someone else.",
     notSold: "This pot has not been sold yet, so it cannot be added.", openIn: "Open this page from the Telegram bot to see your pots.", error: "Something went wrong. Please try again.", loading: "Loading…",
     addCode: "Add by code", codePh: "Code from the sticker", add: "Add",
+    ask: "Ask Katya", askPh: "Describe what worries you", symptom: "What happened?", other: "Other", send: "Send", sent: "Question sent to Katya.", firstAid: "First aid", waiting: "Waiting for an answer", katya: "Katya",
   },
 } as const;
 
@@ -97,7 +101,7 @@ export function MiniApp({ bot }: { bot: string }) {
 
       {me.items.length === 0 && !pending && <p className="card p-4 text-muted">{t.empty}</p>}
       <ul className="space-y-3">
-        {me.items.map((i) => (<PotRow key={i.code} item={i} t={t} call={call} />))}
+        {me.items.map((i) => (<PotRow key={i.code} item={i} t={t} call={call} symptoms={me.symptoms} reload={() => load(initData!)} />))}
       </ul>
 
       <section className="card p-4">
@@ -111,7 +115,18 @@ export function MiniApp({ bot }: { bot: string }) {
   );
 }
 
-function PotRow({ item, t, call }: { item: Item; t: (typeof TEXT)["uk"] | (typeof TEXT)["en"]; call: (p: string, b?: unknown) => Promise<{ status: number; json: Record<string, unknown> }> }) {
+function PotRow({ item, t, call, symptoms, reload }: { item: Item; t: (typeof TEXT)["uk"] | (typeof TEXT)["en"]; call: (p: string, b?: unknown) => Promise<{ status: number; json: Record<string, unknown> }>; symptoms: Symptom[]; reload: () => Promise<void> }) {
+  const [text, setText] = useState("");
+  const [symptom, setSymptom] = useState("");
+  const [hint, setHint] = useState<{ symptom: string; fix: string } | null>(null);
+  const [asked, setAsked] = useState(false);
+  const ask = async () => {
+    const r = await call("/api/app/question", { code: item.code, text, symptom });
+    if (r.status !== 200) { setAsked(false); return; }
+    setHint((r.json.hint as { symptom: string; fix: string } | null) ?? null);
+    setAsked(true); setText(""); setSymptom("");
+    await reload();
+  };
   const [name, setName] = useState(item.name ?? "");
   const [state, setState] = useState<"" | "saved" | "error">("");
   const save = async () => {
@@ -129,6 +144,30 @@ function PotRow({ item, t, call }: { item: Item; t: (typeof TEXT)["uk"] | (typeo
       </form>
       {state && <p role="status" className="mt-1 text-sm text-muted">{state === "saved" ? t.saved : t.error}</p>}
       <a className="mt-2 inline-block text-sm text-leaf underline" href={`/p/${item.code}`}>{t.card}</a>
+
+      <details className="mt-3 rounded-xl border border-line p-3">
+        <summary className="cursor-pointer font-semibold">{t.ask}</summary>
+        <form className="mt-3 space-y-2" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
+          <select className="input" value={symptom} onChange={(e) => setSymptom(e.target.value)} aria-label={t.symptom}>
+            <option value="">{t.symptom}</option>
+            {symptoms.map((s) => (<option key={s.key} value={s.key}>{s.label}</option>))}
+          </select>
+          <textarea className="input" rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.askPh} aria-label={t.askPh} maxLength={1000} required />
+          <button className="btn btn-primary" type="submit">{t.send}</button>
+        </form>
+        {asked && <p role="status" className="mt-2 text-sm font-semibold">{t.sent}</p>}
+        {hint && <p className="mt-2 rounded-lg bg-soft p-3 text-sm"><b>{t.firstAid}:</b> {hint.fix}</p>}
+        {item.questions.length > 0 && (
+          <ul className="mt-3 space-y-2 text-sm">
+            {item.questions.map((q) => (
+              <li key={q.id} className="rounded-lg bg-soft p-3">
+                <p>{q.body}</p>
+                {q.answer ? <p className="mt-1 font-semibold text-leaf">{t.katya}: {q.answer}</p> : <p className="mt-1 text-muted">{t.waiting}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
     </li>
   );
 }

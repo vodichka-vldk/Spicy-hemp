@@ -18,7 +18,7 @@ export async function connectWebhook() {
   if (!process.env.TELEGRAM_BOT_TOKEN || !secret) return back(msg("Задайте TELEGRAM_BOT_TOKEN і TELEGRAM_WEBHOOK_SECRET"));
   const url = `${siteUrl()}/api/telegram/webhook`;
   if (!url.startsWith("https://")) return back(msg("Вебхук працює лише з https-адресою сайту (NEXT_PUBLIC_SITE_URL)"));
-  const ok = await tgCall("setWebhook", { url, secret_token: secret, allowed_updates: ["message"], drop_pending_updates: true });
+  const ok = await tgCall("setWebhook", { url, secret_token: secret, allowed_updates: ["message", "callback_query"], drop_pending_updates: true });
   back(msg(ok ? "Вебхук підключено" : "Telegram не прийняв вебхук, дивіться журнал сервера"));
 }
 

@@ -47,7 +47,7 @@ export default async function Pots() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.code} className="border-b border-line last:border-0">
-                <td className="p-3">{r.label}</td><td className="font-mono">{formatCode(r.code)}</td><td>{r.type}</td><td>{r.what}</td><td>{r.batch}</td>
+                <td className="p-3">{r.type === "Кошик" ? <Link href={`/admin/pots/${r.code}`} className="font-semibold">{r.label}</Link> : r.label}</td><td className="font-mono">{formatCode(r.code)}</td><td>{r.type}</td><td>{r.what}</td><td>{r.batch}</td>
                 <td><span className="badge">{statusUk(r.status)}</span></td><td className="font-mono">{r.orderId ?? "—"}</td>
                 <td><a href={`/p/${r.code}`} className="text-leaf underline">/p/{r.code}</a></td>
               </tr>

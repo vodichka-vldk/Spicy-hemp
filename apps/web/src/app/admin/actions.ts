@@ -6,6 +6,7 @@ import { loadProducts } from "@/lib/catalog-server";
 import { getProduct } from "@/lib/shop";
 import { makeCode } from "@/lib/pots";
 import { getHerb } from "@/lib/content";
+import { ITEM_STATUSES, ITEM_TRANSITIONS, canTransition, type ItemStatus } from "@/lib/domain";
 import { store, type Item, type OrderStatus, type Pot } from "@/lib/store";
 
 /** Reserves what was ordered: one basket (with its own QR) per set unit, one planted pot per single plant. */
@@ -113,4 +114,30 @@ export async function moderateReview(formData: FormData) {
   revalidatePath("/admin/reviews");
   revalidatePath(`/uk/shop/${review.product}`);
   revalidatePath(`/en/shop/${review.product}`);
+}
+
+/** Moves a pot along its life cycle (e.g. a return: returned, then back on the shelf or written off). Only allowed transitions pass. */
+export async function setItemStatus(formData: FormData) {
+  const code = String(formData.get("code"));
+  const to = String(formData.get("to")) as ItemStatus;
+  if (!(ITEM_STATUSES as readonly string[]).includes(to)) return;
+  const db = store();
+  const item = await db.getItem(code);
+  if (!item || !canTransition(ITEM_TRANSITIONS, item.status, to)) return;
+  // a pot that goes back on the shelf loses its buyer and order
+  const back = to === "ready_for_sale";
+  const { orderId: _o, ownerId: _w, activatedAt: _a, ...rest } = item;
+  void _o; void _w; void _a;
+  await db.upsertItems([{ ...(back ? { ...rest, orderId: undefined, ownerId: undefined, activatedAt: undefined } : item), status: to }]);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500);
+  if (note) await db.setSetting(`item_note:${code}`, note);
+  revalidatePath(`/admin/pots/${code}`);
+  revalidatePath("/admin/pots");
+}
+
+export async function saveItemNote(formData: FormData) {
+  const code = String(formData.get("code"));
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500);
+  await store().setSetting(`item_note:${code}`, note || null);
+  revalidatePath(`/admin/pots/${code}`);
 }

@@ -242,6 +242,7 @@ ok(unauth.url().includes("/admin/login"), "admin requires authentication");
 // 8c. Telegram: webhook secret, Mini App sign-in, activation, naming
 import crypto from "node:crypto";
 const BOT = process.env.TELEGRAM_BOT_TOKEN ?? "123456:E2E";
+const TG = 100000 + (Date.now() % 900000); // a fresh Telegram user on every run
 const initFor = (id, startParam) => {
   const f = { auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: "Олена", language_code: "uk" }), ...(startParam ? { start_param: startParam } : {}) };
   const check = Object.entries(f).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`).join("\n");
@@ -270,7 +271,7 @@ await op.getByText(/Відкрийте цю сторінку з Telegram-бот�
 ok(true, "the Mini App page explains how to open it outside Telegram");
 
 const tg = await browser.newContext({ viewport: { width: 390, height: 800 } });
-await tg.addInitScript((initData) => { window.Telegram = { WebApp: { initData, ready() {}, expand() {} } }; }, initFor(4242, code));
+await tg.addInitScript((initData) => { window.Telegram = { WebApp: { initData, ready() {}, expand() {} } }; }, initFor(TG, code));
 await tg.route("**/telegram.org/**", (r) => r.abort());
 const mp = await tg.newPage();
 await mp.goto(BASE + "/app");
@@ -287,6 +288,33 @@ ok(true, "the name given to the pot is kept");
 ok((await api("/api/app/activate", initFor(9999), { code })).status() === 409, "another buyer cannot take an activated pot");
 ok((await api("/api/app/rename", initFor(9999), { code, name: "Моє" })).status() === 404, "another buyer cannot rename it");
 ok((await api("/api/app/activate", initFor(9999), { code: "ZZZZ2222" })).status() === 400, "a mistyped code (bad check character) is refused");
+
+// 8d. questions to Katya, owners, pot card, care schedule, cron
+const asked = await api("/api/app/question", initFor(TG), { code, text: "Листя жовтіє E2E", symptom: "overwater" });
+ok(asked.status() === 200 && /Поливайте рідше/.test((await asked.json()).hint?.fix ?? ""), "the owner asks Katya and gets first aid for the chosen symptom");
+ok((await api("/api/app/question", initFor(9999), { code, text: "чужий" })).status() === 404, "nobody else can ask about this pot");
+ok((await api("/api/app/question", initFor(TG), { code, text: "   " })).status() === 400, "an empty question is refused");
+await ap.goto(BASE + "/admin/questions");
+ok(await ap.getByText("Листя жовтіє E2E").count() === 1, "the question is in the admin queue");
+await ap.getByLabel("Відповідь").first().fill("Полийте менше E2E");
+await ap.getByRole("button", { name: "Відповісти" }).first().click();
+await ap.getByText("Полийте менше E2E").first().waitFor();
+const meAfter = await (await api("/api/app/me", initFor(TG))).json();
+ok(meAfter.items.some((i) => i.questions.some((q) => q.answer === "Полийте менше E2E")), "the owner sees Katya's answer");
+await ap.goto(BASE + "/admin/pots/" + code);
+ok(await ap.getByText("Зелений сніданок").count() >= 1 && await ap.getByText("Листя жовтіє E2E").count() === 1 && await ap.getByRole("heading", { name: /Заплановані нагадування/ }).count() === 1, "admin pot card shows owner, questions and reminders");
+await ap.goto(BASE + "/admin/owners");
+ok(await ap.getByText("Олена").count() >= 1, "admin lists owners");
+await ap.goto(BASE + "/admin/care");
+await ap.getByLabel("Полив: М'ята").or(ap.getByLabel(/Полив: М.ята/)).first().fill("3");
+await ap.getByRole("button", { name: "Зберегти" }).click();
+await ap.waitForLoadState("networkidle");
+ok((await ap.getByLabel(/Полив: М.ята/).first().inputValue()) === "3", "the care schedule is saved");
+ok((await ctx.request.get(BASE + "/api/cron/reminders")).status() === 403, "the cron endpoint refuses calls without the secret");
+const cron = await ctx.request.get(BASE + "/api/cron/reminders", { headers: { Authorization: `Bearer ${process.env.CRON_SECRET ?? "e2e-cron"}` } });
+ok(cron.status() === 200 && typeof (await cron.json()).sent === "number", "the cron endpoint plans and sends reminders");
+await ap.goto(BASE + "/admin/pots/" + code);
+ok((await ap.getByText(/полив/).count()) >= 1, "reminders are planned after activation");
 
 // 9. SEO endpoints
 const sm = await (await ctx.request.get(BASE + "/sitemap.xml")).text();

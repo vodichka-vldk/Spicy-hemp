@@ -73,3 +73,8 @@ export async function tgCall<T = unknown>(method: string, body: Record<string, u
 
 export const sendMessage = (chatId: number | string, text: string, replyMarkup?: Markup) =>
   tgCall("sendMessage", { chat_id: chatId, text, disable_web_page_preview: true, ...(replyMarkup ? { reply_markup: replyMarkup } : {}) });
+
+export const answerCallback = (id: string, text: string) => tgCall("answerCallbackQuery", { callback_query_id: id, text: text.slice(0, 190) });
+/** Replaces the text and removes the buttons. */
+export const editMessage = (chatId: number, messageId: number, text: string) =>
+  tgCall("editMessageText", { chat_id: chatId, message_id: messageId, text, reply_markup: { inline_keyboard: [] } });

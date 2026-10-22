@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { handleUpdate, type TgUpdate } from "@/lib/bot";
 import { siteUrl } from "@/lib/payments";
 import { store } from "@/lib/store";
-import { sendMessage, webhookAuthorised } from "@/lib/telegram";
+import { answerCallback, editMessage, sendMessage, webhookAuthorised } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
   try {
-    await handleUpdate(update, { db: store(), send: (chat, text, markup) => sendMessage(chat, text, markup), siteUrl: siteUrl() });
+    await handleUpdate(update, { db: store(), send: (chat, text, markup) => sendMessage(chat, text, markup), answer: answerCallback, edit: editMessage, siteUrl: siteUrl() });
   } catch (err) {
     console.error("bot update failed", err); // answer 200 anyway so Telegram does not retry the same update forever
   }

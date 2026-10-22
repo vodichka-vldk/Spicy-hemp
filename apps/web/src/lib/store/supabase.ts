@@ -1,5 +1,5 @@
 import type { CareSection } from "../domain";
-import type { CatalogEntry, Item, Owner, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
+import type { CatalogEntry, Item, Owner, Question, Reminder, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
 // Thin PostgREST client (no SDK needed). Tables are defined in supabase/migrations.
 const url = () => process.env.SUPABASE_URL!.replace(/\/$/, "");
@@ -59,11 +59,26 @@ export const catalogFromRow = (r: ProductRow): CatalogEntry => {
   };
 };
 
-const OWNER_SELECT = "id,telegramId:telegram_id,username,firstName:first_name,locale,notify,createdAt:created_at";
-type OwnerRow = Omit<Owner, "username" | "firstName"> & { username: string | null; firstName: string | null };
+const OWNER_SELECT = "id,telegramId:telegram_id,username,firstName:first_name,locale,notify,timezone,quietFrom:quiet_from,quietUntil:quiet_until,createdAt:created_at";
+type OwnerRow = Omit<Owner, "username" | "firstName" | "quietFrom" | "quietUntil"> & { username: string | null; firstName: string | null; quietFrom: string; quietUntil: string };
 export const ownerFromRow = (r: OwnerRow): Owner => ({
   id: r.id, telegramId: Number(r.telegramId), locale: r.locale, notify: r.notify, createdAt: r.createdAt,
+  timezone: r.timezone, quietFrom: r.quietFrom?.slice(0, 5), quietUntil: r.quietUntil?.slice(0, 5),
   ...(r.username ? { username: r.username } : {}), ...(r.firstName ? { firstName: r.firstName } : {}),
+});
+
+const REMINDER_SELECT = "id,itemCode:item_code,ownerId:owner_id,task,species,dueAt:due_at,status,sentAt:sent_at,doneAt:done_at";
+type ReminderRow = Omit<Reminder, "species" | "sentAt" | "doneAt"> & { species: string | null; sentAt: string | null; doneAt: string | null };
+export const reminderFromRow = (r: ReminderRow): Reminder => ({
+  id: r.id, itemCode: r.itemCode, ownerId: r.ownerId, task: r.task, dueAt: r.dueAt, status: r.status,
+  ...(r.species ? { species: r.species } : {}), ...(r.sentAt ? { sentAt: r.sentAt } : {}), ...(r.doneAt ? { doneAt: r.doneAt } : {}),
+});
+
+const QUESTION_SELECT = "id,itemCode:item_code,ownerId:owner_id,body,symptom,status,answer,answeredAt:answered_at,createdAt:created_at";
+type QuestionRow = Omit<Question, "symptom" | "answer" | "answeredAt"> & { symptom: string | null; answer: string | null; answeredAt: string | null };
+export const questionFromRow = (r: QuestionRow): Question => ({
+  id: r.id, itemCode: r.itemCode, ownerId: r.ownerId, body: r.body, status: r.status, createdAt: r.createdAt,
+  ...(r.symptom ? { symptom: r.symptom } : {}), ...(r.answer ? { answer: r.answer } : {}), ...(r.answeredAt ? { answeredAt: r.answeredAt } : {}),
 });
 
 export const supabaseStore: Store = {
@@ -137,12 +152,38 @@ export const supabaseStore: Store = {
     const rows = await rest<OwnerRow[]>(`owners?telegram_id=eq.${tid}&select=${OWNER_SELECT}`);
     return rows[0] ? ownerFromRow(rows[0]) : null;
   },
+  async listOwners() { return (await rest<OwnerRow[]>(`owners?select=${OWNER_SELECT}&order=created_at.desc&limit=5000`)).map(ownerFromRow); },
   async upsertOwner(o) {
     const rows = await rest<OwnerRow[]>(`owners?on_conflict=telegram_id&select=${OWNER_SELECT}`, {
       method: "POST", prefer: "resolution=merge-duplicates,return=representation",
       body: JSON.stringify({ telegram_id: o.telegramId, username: o.username ?? null, first_name: o.firstName ?? null, locale: o.locale, notify: o.notify }),
     });
     return ownerFromRow(rows[0]);
+  },
+  async listReminders(f) {
+    const q = [f?.itemCode ? `&item_code=eq.${encodeURIComponent(f.itemCode)}` : "", f?.ownerId ? `&owner_id=eq.${f.ownerId}` : "", f?.statuses ? `&status=in.(${f.statuses.join(",")})` : ""].join("");
+    return (await rest<ReminderRow[]>(`reminders?select=${REMINDER_SELECT}&order=due_at.asc&limit=5000${q}`)).map(reminderFromRow);
+  },
+  async upsertReminders(rs) {
+    if (!rs.length) return;
+    await rest("reminders?on_conflict=id", {
+      method: "POST", prefer: "resolution=merge-duplicates",
+      body: JSON.stringify(rs.map((r) => ({ id: r.id, item_code: r.itemCode, owner_id: r.ownerId, task: r.task, species: r.species ?? null, due_at: r.dueAt, status: r.status, sent_at: r.sentAt ?? null, done_at: r.doneAt ?? null }))),
+    });
+  },
+  async listQuestions(f) {
+    const q = [f?.itemCode ? `&item_code=eq.${encodeURIComponent(f.itemCode)}` : "", f?.ownerId ? `&owner_id=eq.${f.ownerId}` : "", f?.status ? `&status=eq.${f.status}` : ""].join("");
+    return (await rest<QuestionRow[]>(`questions?select=${QUESTION_SELECT}&order=created_at.asc&limit=2000${q}`)).map(questionFromRow);
+  },
+  async getQuestion(id) {
+    const rows = await rest<QuestionRow[]>(`questions?id=eq.${encodeURIComponent(id)}&select=${QUESTION_SELECT}`);
+    return rows[0] ? questionFromRow(rows[0]) : null;
+  },
+  async upsertQuestion(q) {
+    await rest("questions?on_conflict=id", {
+      method: "POST", prefer: "resolution=merge-duplicates",
+      body: JSON.stringify({ id: q.id, item_code: q.itemCode, owner_id: q.ownerId, body: q.body, symptom: q.symptom ?? null, status: q.status, answer: q.answer ?? null, answered_at: q.answeredAt ?? null, created_at: q.createdAt }),
+    });
   },
   async getSetting(key) {
     const rows = await rest<Array<{ value: unknown }>>(`app_settings?key=eq.${encodeURIComponent(key)}&select=value`);

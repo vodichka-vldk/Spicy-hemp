@@ -4,9 +4,9 @@ import { getHerbs } from "../content";
 import { makeCode, seeded } from "../pots";
 import { getProduct } from "../shop";
 import { randomUUID } from "node:crypto";
-import type { CatalogEntry, Item, Owner, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
+import type { CatalogEntry, Item, Owner, Question, Reminder, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
-type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; catalog: CatalogEntry[]; owners: Owner[]; settings: Record<string, unknown>; orderEvents: OrderEvent[]; scans: ScanEvent[] };
+type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; catalog: CatalogEntry[]; owners: Owner[]; reminders: Reminder[]; questions: Question[]; settings: Record<string, unknown>; orderEvents: OrderEvent[]; scans: ScanEvent[] };
 
 const FILE = path.join(process.cwd(), ".data", "store.json");
 
@@ -44,10 +44,10 @@ export function demoItems(): Item[] {
 async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
-    if (!db.items || !db.reviews || !db.orderEvents || !db.catalog || !db.owners || !db.settings) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; db.catalog ??= []; db.owners ??= []; db.settings ??= {}; await write(db); }
+    if (!db.items || !db.reviews || !db.orderEvents || !db.catalog || !db.owners || !db.settings || !db.reminders || !db.questions) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; db.catalog ??= []; db.owners ??= []; db.settings ??= {}; db.reminders ??= []; db.questions ??= []; await write(db); }
     return db;
   } catch {
-    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], catalog: [], owners: [], settings: {}, orderEvents: [], scans: [] };
+    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], catalog: [], owners: [], reminders: [], questions: [], settings: {}, orderEvents: [], scans: [] };
     await write(db);
     return db;
   }
@@ -109,6 +109,7 @@ export const fileStore: Store = {
       await write(db);
     }),
   getOwnerByTelegram: (tid) => serial(async () => (await read()).owners.find((o) => o.telegramId === tid) ?? null),
+  listOwners: () => serial(async () => (await read()).owners),
   upsertOwner: (o) =>
     serial(async () => {
       const db = await read();
@@ -118,6 +119,16 @@ export const fileStore: Store = {
       await write(db);
       return next;
     }),
+  listReminders: (f) => serial(async () => (await read()).reminders.filter((r) => (!f?.itemCode || r.itemCode === f.itemCode) && (!f?.ownerId || r.ownerId === f.ownerId) && (!f?.statuses || f.statuses.includes(r.status)))),
+  upsertReminders: (rs) =>
+    serial(async () => {
+      const db = await read();
+      for (const r of rs) { const i = db.reminders.findIndex((x) => x.id === r.id); if (i >= 0) db.reminders[i] = r; else db.reminders.push(r); }
+      await write(db);
+    }),
+  listQuestions: (f) => serial(async () => (await read()).questions.filter((q) => (!f?.itemCode || q.itemCode === f.itemCode) && (!f?.ownerId || q.ownerId === f.ownerId) && (!f?.status || q.status === f.status)).sort((a, b) => a.createdAt.localeCompare(b.createdAt))),
+  getQuestion: (id) => serial(async () => (await read()).questions.find((q) => q.id === id) ?? null),
+  upsertQuestion: (q) => serial(async () => { const db = await read(); const i = db.questions.findIndex((x) => x.id === q.id); if (i >= 0) db.questions[i] = q; else db.questions.push(q); await write(db); }),
   getSetting: (key) => serial(async () => ((await read()).settings[key] ?? null) as never),
   setSetting: (key, value) => serial(async () => { const db = await read(); if (value === null) delete db.settings[key]; else db.settings[key] = value; await write(db); }),
   listCatalog: () => serial(async () => (await read()).catalog),

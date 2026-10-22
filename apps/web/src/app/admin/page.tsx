@@ -19,7 +19,7 @@ function Card({ href, n, title, hint, tone }: { href: string; n: number; title: 
 /** "Today": everything that needs a decision, in one screen. */
 export default async function Today() {
   const db = store();
-  const [orders, reviews, items] = await Promise.all([db.listOrders(), db.listReviews({ status: "pending" }), db.listItems()]);
+  const [orders, reviews, items, openQuestions] = await Promise.all([db.listOrders(), db.listReviews({ status: "pending" }), db.listItems(), db.listQuestions({ status: "open" })]);
   const todo = orders.filter((o) => inTab(o, "todo"));
   const unpaid = orders.filter((o) => inTab(o, "unpaid"));
   const toShip = orders.filter((o) => ["cod_confirmed", "paid", "processing", "packed"].includes(o.status));
@@ -34,6 +34,7 @@ export default async function Today() {
         <Card href="/admin/orders?tab=todo" n={todo.length} title="Замовлення до дії" hint="підтвердити, зібрати, відправити" tone="warn" />
         <Card href="/admin/orders?tab=todo" n={toShip.length} title="До відправки" hint="оплачені й підтверджені" />
         <Card href="/admin/orders?tab=unpaid" n={unpaid.length} title="Чекають оплату" hint="нагадайте клієнтам" />
+        <Card href="/admin/questions" n={openQuestions.length} title="Питання без відповіді" hint="відповісти власнику" tone="warn" />
         <Card href="/admin/reviews" n={reviews.length} title="Відгуки на модерації" hint="схвалити або відхилити" tone="warn" />
       </div>
 

@@ -5,7 +5,7 @@
 ```bash
 cd apps/web
 npm run typecheck     # типы
-npm test              # 43 юнит-теста: контент, коды, цены, заказы, платежи, Notion-маппинг, статистика
+npm test              # 54 теста: контент, коды, цены, заказы, платежи, Notion-маппинг, статистика, миграции и RLS (PGlite)
 npm run build         # production-сборка
 # сквозной тест в браузере (нужен запущенный сервер и демо-данные):
 ADMIN_PASSWORD=test123 npm run build && ADMIN_PASSWORD=test123 npx next start -p 3100 &
@@ -18,7 +18,7 @@ node tests/e2e/smoke.mjs
 
 ```bash
 cd apps/web
-# 1. Supabase: выполните supabase/migrations/0001_init.sql в SQL editor проекта, затем в .env.local:
+# 1. Supabase: выполните supabase/migrations/0001_init.sql, затем 0002_catalog_items_journal.sql в SQL editor проекта, затем в .env.local:
 #    SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 npm run check:connections      # проверяет таблицы и базы
 npm run supabase:seed          # загружает 15 трав и 6 семейств в Supabase

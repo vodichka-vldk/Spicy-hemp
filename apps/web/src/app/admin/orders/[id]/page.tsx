@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { formatMoney } from "@/lib/shop-calc";
-import { store, type OrderStatus } from "@/lib/store";
+import { store } from "@/lib/store";
+import { ORDER_TRANSITIONS } from "@/lib/domain";
 import { formatCode } from "@/lib/pots";
 import { allocatePots, setStatus } from "../../actions";
 
 export const dynamic = "force-dynamic";
-const statuses: OrderStatus[] = ["new", "pending_payment", "paid", "packed", "shipped", "delivered", "cancelled"];
 
 export default async function AdminOrder({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ short?: string }> }) {
   const { id } = await params;
@@ -32,7 +32,7 @@ export default async function AdminOrder({ params, searchParams }: { params: Pro
           <p className="flex justify-between text-lg font-bold"><span>Total ({o.payment})</span><span>{money(o.totalMinor)}</span></p>
           <form action={setStatus} className="mt-4 flex gap-2">
             <input type="hidden" name="id" value={o.id} />
-            <select name="status" defaultValue={o.status} className="input">{statuses.map((s) => (<option key={s}>{s}</option>))}</select>
+            <select name="status" defaultValue={o.status} className="input">{[o.status, ...ORDER_TRANSITIONS[o.status]].map((s) => (<option key={s}>{s}</option>))}</select>
             <button className="btn btn-primary" type="submit">Save</button>
           </form>
         </section>

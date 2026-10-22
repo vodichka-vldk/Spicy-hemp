@@ -6,13 +6,14 @@ import { getProduct } from "@/lib/shop";
 import { makeCode } from "@/lib/pots";
 import { getHerb } from "@/lib/content";
 import { store, type OrderStatus, type Pot } from "@/lib/store";
-
-const STATUSES: OrderStatus[] = ["new", "pending_payment", "paid", "packed", "shipped", "delivered", "cancelled"];
+import { ORDER_STATUSES, ORDER_TRANSITIONS, canTransition } from "@/lib/domain";
 
 export async function setStatus(formData: FormData) {
   const id = String(formData.get("id"));
   const status = String(formData.get("status")) as OrderStatus;
-  if (!STATUSES.includes(status)) return;
+  if (!ORDER_STATUSES.includes(status)) return;
+  const current = await store().getOrder(id);
+  if (!current || !canTransition(ORDER_TRANSITIONS, current.status, status)) return;
   await store().updateOrder(id, { status });
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${id}`);

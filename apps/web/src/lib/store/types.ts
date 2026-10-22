@@ -1,6 +1,7 @@
 import type { Locale } from "../types";
 
-export type OrderStatus = "new" | "pending_payment" | "paid" | "packed" | "shipped" | "delivered" | "cancelled";
+import type { OrderStatus } from "../domain";
+export type { OrderStatus };
 export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
 export type OrderItem = { slug: string; glaze: string; qty: number; unitMinor: number; title: string };

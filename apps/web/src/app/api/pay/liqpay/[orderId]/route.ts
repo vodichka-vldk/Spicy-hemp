@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { liqpayForm } from "@/lib/payments";
+import { changeOrderStatus } from "@/lib/order-flow";
 import { store } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await ctx.params;
-  const order = await store().getOrder(orderId);
+  const db = store();
+  let order = await db.getOrder(orderId);
+  // a failed payment can be retried: back to "awaiting payment"
+  if (order?.status === "payment_failed") {
+    const r = await changeOrderStatus(db, orderId, "pending_payment", { type: "customer" }, "Повторна спроба оплати");
+    if (r.ok) order = r.order;
+  }
   if (!order || order.payment !== "liqpay" || order.status !== "pending_payment" || !process.env.LIQPAY_PRIVATE_KEY) {
     return new NextResponse("Not found", { status: 404 });
   }

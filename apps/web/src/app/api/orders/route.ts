@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildOrder, validateOrder } from "@/lib/orders";
+import { registerNewOrder } from "@/lib/order-flow";
 import { createStripeSession, siteUrl } from "@/lib/payments";
 import { store } from "@/lib/store";
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   if (!v.ok) return NextResponse.json({ error: "validation", errors: v.errors }, { status: 422 });
 
   const order = buildOrder(v.value);
-  await store().createOrder(order);
+  await registerNewOrder(store(), order);
 
   let redirect = `${siteUrl()}/${order.locale}/order/${order.id}`;
   try {

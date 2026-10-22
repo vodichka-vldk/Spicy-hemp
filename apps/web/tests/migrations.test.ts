@@ -83,16 +83,15 @@ describe("migration 0002", () => {
     await db.exec("update items set status='ready_for_sale' where code='AAAA2222'");
   });
 
-  it("enforces order transitions and logs each change", async () => {
+  it("enforces order transitions", async () => {
     await expect(db.exec("update orders set status='delivered' where id='SH-1'")).rejects.toThrow(/cannot go from/);
     await db.exec("update orders set status='paid' where id='SH-1'");
     await db.exec("update orders set status='processing' where id='SH-1'");
-    const ev = await rows<{ from_status: string; to_status: string }>(
-      "select from_status, to_status from order_events where order_id='SH-1' order by id");
-    expect(ev).toEqual([
-      { from_status: "pending_payment", to_status: "paid" },
-      { from_status: "paid", to_status: "processing" },
-    ]);
+  });
+
+  it("stores order events with an actor", async () => {
+    await db.exec("insert into order_events (order_id, from_status, to_status, actor_type, actor) values ('SH-1','paid','processing','admin','Каті')");
+    await expect(db.exec("insert into order_events (order_id, to_status, actor_type) values ('SH-1','paid','robot')")).rejects.toThrow();
   });
 
   it("activation needs owner and timestamp together; owner_name is capped", async () => {
@@ -154,8 +153,8 @@ describe("row level security", () => {
     expect(r).toEqual([{ status: "approved", consent_public: true }]);
   });
 
-  it("hides items, owners, journal, questions, orders and payments from anonymous visitors", async () => {
-    for (const t of ["items", "owners", "journal_entries", "questions", "orders", "payments", "reminders", "admin_profiles"]) {
+  it("hides items, owners, journal, questions, orders and order events from anonymous visitors", async () => {
+    for (const t of ["items", "owners", "journal_entries", "questions", "orders", "order_events", "reminders", "admin_profiles"]) {
       expect(await as("anon", null, `select 1 from ${t}`), t).toEqual([]);
     }
   });

@@ -59,6 +59,7 @@ export default async function ProductPage({ params }: P) {
         <div className="space-y-8">
           <header>
             <h1 className="text-4xl font-bold text-leaf">{productTitle(p, locale)}</h1>
+            {avg && <p className="mt-1"><a href="#reviews" className="text-amber-600 no-underline" aria-label={`${avg} / 5`}>★ {avg}</a> <a href="#reviews" className="text-sm text-muted">({reviews.length})</a></p>}
             <p className="mt-2 text-3xl font-bold">{price}</p>
             <p className="text-sm text-muted">{t(locale, "price_note")} · {t(locale, "in_stock")}</p>
             <p className="mt-4 text-lg">{p.blurb ? p.blurb[locale] : herbs[0].tagline[locale]}</p>

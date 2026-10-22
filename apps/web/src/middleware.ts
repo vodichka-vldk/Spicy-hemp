@@ -1,27 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, adminConfigured, verifySession } from "@/lib/admin-auth";
 import { detectLocale, isLocale } from "@/lib/i18n";
 
 const PUBLIC_FILE = /\.[a-z0-9]+$/i;
 
-function basicAuth(req: NextRequest): NextResponse | null {
-  const password = process.env.ADMIN_PASSWORD;
-  if (!password) {
-    if (process.env.NODE_ENV === "production") return new NextResponse("Admin disabled: set ADMIN_PASSWORD", { status: 503 });
-    return null; // open in local development
-  }
-  const header = req.headers.get("authorization") ?? "";
-  if (header.startsWith("Basic ")) {
-    const [user, ...rest] = atob(header.slice(6)).split(":");
-    if (user === (process.env.ADMIN_USER ?? "admin") && rest.join(":") === password) return null;
-  }
-  return new NextResponse("Authentication required", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="admin"' } });
-}
-
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    return basicAuth(req) ?? NextResponse.next();
+    if (pathname === "/admin/login") return NextResponse.next();
+    if (!adminConfigured()) {
+      if (process.env.NODE_ENV === "production") return new NextResponse("Адмінку вимкнено: задайте ADMIN_PASSWORD", { status: 503 });
+      return NextResponse.next(); // open in local development
+    }
+    if (await verifySession(req.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
+    if (pathname.startsWith("/api/admin")) return new NextResponse("Unauthorized", { status: 401 });
+    const url = req.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
+    return NextResponse.redirect(url);
   }
 
   if (

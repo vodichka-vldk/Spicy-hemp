@@ -3,9 +3,9 @@ import path from "node:path";
 import { getHerbs } from "../content";
 import { makeCode, seeded } from "../pots";
 import { getProduct } from "../shop";
-import type { Item, Order, Pot, Review, ScanEvent, Store } from "./types";
+import type { Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
-type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; scans: ScanEvent[] };
+type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; orderEvents: OrderEvent[]; scans: ScanEvent[] };
 
 const FILE = path.join(process.cwd(), ".data", "store.json");
 
@@ -43,10 +43,10 @@ export function demoItems(): Item[] {
 async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
-    if (!db.items || !db.reviews) { db.items ??= demoItems(); db.reviews ??= []; await write(db); }
+    if (!db.items || !db.reviews || !db.orderEvents) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; await write(db); }
     return db;
   } catch {
-    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], scans: [] };
+    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], orderEvents: [], scans: [] };
     await write(db);
     return db;
   }
@@ -72,6 +72,8 @@ export const fileStore: Store = {
       await write(db);
       return o;
     }),
+  addOrderEvent: (ev) => serial(async () => { const db = await read(); db.orderEvents.push(ev); await write(db); }),
+  listOrderEvents: (orderId) => serial(async () => (await read()).orderEvents.filter((e) => e.orderId === orderId).sort((a, b) => a.ts.localeCompare(b.ts))),
   getPot: (code) => serial(async () => (await read()).pots.find((p) => p.code === code) ?? null),
   listPots: () => serial(async () => (await read()).pots),
   upsertPots: (pots) =>

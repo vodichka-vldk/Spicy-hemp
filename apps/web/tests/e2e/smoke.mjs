@@ -124,21 +124,34 @@ const ow = await dp.evaluate(() => document.documentElement.scrollWidth <= docum
 ok(ow, "no horizontal scroll on desktop passport");
 
 // 8. admin
-const admin = await browser.newContext({ httpCredentials: { username: "admin", password: ADMIN }, viewport: { width: 1280, height: 900 } });
+const admin = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const ap = await admin.newPage();
+await ap.goto(BASE + "/admin/orders");
+await ap.waitForURL(/\/admin\/login/);
+ok(await ap.getByRole("heading", { name: "Вхід в адмінку" }).count() === 1, "admin redirects to the sign-in page");
+await ap.getByLabel("Електронна пошта").fill("admin");
+await ap.getByLabel("Пароль").fill("wrong");
+await ap.getByRole("button", { name: "Увійти" }).click();
+await ap.getByText("Невірна пошта або пароль.").waitFor();
+ok(true, "wrong password is refused");
+await ap.getByLabel("Електронна пошта").fill("admin");
+await ap.getByLabel("Пароль").fill(ADMIN);
+await ap.getByRole("button", { name: "Увійти" }).click();
+await ap.waitForURL(/\/admin\/orders/);
+ok(true, "admin signs in and returns to the page it wanted");
 // make sure there is stock regardless of earlier runs
 await ap.goto(BASE + "/admin/pots");
 await ap.selectOption("select[name=product]", "basil");
 await ap.fill("input[name=count]", "3");
 await ap.fill("input[name=batch]", "E2E");
-await ap.getByRole("button", { name: "Make" }).click();
+await ap.getByRole("button", { name: "Створити" }).click();
 await ap.waitForLoadState("networkidle");
 ok((await ap.getByText("E2E").count()) >= 3, "admin can generate a batch of pots");
 // baskets: one form, one QR per basket, card opens from the scan
 await ap.selectOption("select[name=product]", "set-tea");
 await ap.fill("input[name=count]", "2");
 await ap.fill("input[name=batch]", "E2EK");
-await ap.getByRole("button", { name: "Make" }).click();
+await ap.getByRole("button", { name: "Створити" }).click();
 await ap.waitForLoadState("networkidle");
 const basketHref = await ap.locator("tr", { hasText: "E2EK" }).first().locator("a[href^='/p/']").getAttribute("href");
 ok(Boolean(basketHref), "admin can generate a batch of baskets");
@@ -152,16 +165,26 @@ await gp.screenshot({ path: `${SHOTS}/10-garden-card.png`, fullPage: true });
 await ap.goto(BASE + "/admin/orders");
 ok(await ap.getByText(orderId).count() >= 1, "admin lists the new order");
 await ap.getByText(orderId).first().click();
-await ap.getByRole("button", { name: "Allocate pots from stock" }).click();
+await ap.getByRole("button", { name: "Виділити горщики зі складу" }).click();
 await ap.waitForLoadState("networkidle");
 ok((await ap.locator("li.badge.font-mono").count()) >= 1, "pots allocated to the order");
+await ap.getByRole("button", { name: /Підтверджено/ }).click();
+await ap.getByText("Далі: Прийняти в роботу й зібрати").waitFor();
+ok(true, "admin moves the order forward and sees the next step");
+ok((await ap.getByRole("heading", { name: "Історія" }).count()) === 1 && (await ap.locator("ol li").count()) >= 2, "order history lists the status events");
+await page.goto(`${BASE}/uk/order/${orderId}`);
+ok((await page.getByText("Хід замовлення").count()) === 1, "customer sees the order progress");
+await ap.goto(BASE + "/uk");
+await ap.getByRole("link", { name: "Адмінка" }).first().click();
+await ap.waitForURL(/\/admin$/);
+ok(true, "the logo leads a signed-in admin to the admin");
 await ap.goto(BASE + "/admin");
-ok(await ap.getByText("Analytics").count() >= 1, "analytics dashboard renders");
+ok(await ap.getByRole("heading", { name: "Сьогодні" }).count() >= 1, "admin start page (Сьогодні) renders");
 await ap.screenshot({ path: `${SHOTS}/09-admin.png`, fullPage: true });
 await ap.goto(BASE + "/admin/pots/print?batch=DEMO-01");
 ok((await ap.locator(".qr svg").count()) >= 1, "printable QR sheet renders");
 const unauth = await (await browser.newContext()).request.get(BASE + "/admin/orders");
-ok(unauth.status() === 401, "admin requires authentication");
+ok(unauth.url().includes("/admin/login"), "admin requires authentication");
 
 // 9. SEO endpoints
 const sm = await (await ctx.request.get(BASE + "/sitemap.xml")).text();

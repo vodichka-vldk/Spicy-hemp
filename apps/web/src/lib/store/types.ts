@@ -6,6 +6,33 @@ export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
 export type OrderItem = { slug: string; glaze: string; qty: number; unitMinor: number; title: string };
 
+export type Shipment = {
+  carrier: "nova_poshta";
+  ttn: string;
+  ref?: string; // carrier document ref
+  status?: string; // last known tracking status text
+  trackedAt?: string;
+  createdAt: string;
+};
+
+export type PaymentInfo = {
+  status: "none" | "pending" | "paid" | "failed" | "refunded";
+  paidAt?: string;
+  refundedAt?: string;
+  reference?: string; // provider's payment id, for reconciliation
+};
+
+export type OrderEvent = {
+  id: string;
+  orderId: string;
+  ts: string;
+  from: OrderStatus | null;
+  to: OrderStatus;
+  actorType: "system" | "admin" | "webhook" | "customer";
+  actor?: string;
+  note?: string;
+};
+
 export type Order = {
   id: string; // human friendly, e.g. SH-20261012-ABCD
   createdAt: string;
@@ -18,7 +45,10 @@ export type Order = {
   totalMinor: number;
   payment: PaymentMethod;
   customer: { name: string; email: string; phone: string };
-  shipping: { kind: "np" | "intl"; country: string; city: string; address: string; postcode?: string };
+  shipping: { kind: "np" | "intl"; country: string; city: string; address: string; postcode?: string; cityRef?: string; warehouseRef?: string };
+  shipment?: Shipment;
+  paymentInfo?: PaymentInfo;
+  adminNote?: string;
   gift: { isGift: boolean; message?: string };
   note?: string;
   potCodes: string[];
@@ -84,6 +114,8 @@ export interface Store {
   getOrder(id: string): Promise<Order | null>;
   listOrders(): Promise<Order[]>;
   updateOrder(id: string, patch: Partial<Order>): Promise<Order | null>;
+  addOrderEvent(ev: OrderEvent): Promise<void>;
+  listOrderEvents(orderId: string): Promise<OrderEvent[]>;
   getPot(code: string): Promise<Pot | null>;
   listPots(): Promise<Pot[]>;
   upsertPots(pots: Pot[]): Promise<void>;

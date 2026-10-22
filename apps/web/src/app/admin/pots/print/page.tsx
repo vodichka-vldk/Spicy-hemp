@@ -15,8 +15,8 @@ export default async function PrintSheet({ searchParams }: { searchParams: Promi
   const baskets = (await db.listItems()).filter((i) => !batch || i.batch === batch);
   const base = qrBaseUrl();
   const all = [
-    ...baskets.map((i) => ({ code: i.code, label: displayId(i.kind, i.displayNo, "en") })),
-    ...pots.map((p) => ({ code: p.code, label: getHerb(p.species)?.names.en ?? p.species })),
+    ...baskets.map((i) => ({ code: i.code, label: displayId(i.kind, i.displayNo, "uk") })),
+    ...pots.map((p) => ({ code: p.code, label: getHerb(p.species)?.names.uk ?? p.species })),
   ];
   const items = await Promise.all(
     all.map(async (p) => ({
@@ -27,7 +27,7 @@ export default async function PrintSheet({ searchParams }: { searchParams: Promi
   return (
     <div>
       <style>{`@media print { header, .noprint { display:none } main { padding:0 } } .qr svg { width:25mm; height:25mm }`}</style>
-      <p className="noprint mb-4 text-muted">Batch: {batch ?? "all"} · {items.length} codes · print at 100% scale.</p>
+      <p className="noprint mb-4 text-muted">Партія: {batch ?? "усі"} · кодів: {items.length} · друкуйте в масштабі 100%.</p>
       <ul className="grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-8">
         {items.map(({ p, svg }) => (
           <li key={p.code} className="break-inside-avoid text-center" style={{ breakInside: "avoid" }}>

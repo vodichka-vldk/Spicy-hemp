@@ -7,6 +7,7 @@ import { formatMoney, totalsFrom, type Currency } from "@/lib/shop-calc";
 import type { Locale } from "@/lib/types";
 import type { PaymentMethod } from "@/lib/store/types";
 import { useCart } from "./CartProvider";
+import { NpPicker } from "./NpPicker";
 import type { CatalogItem } from "./CartView";
 
 type Errors = Record<string, string>;
@@ -74,7 +75,7 @@ export function CheckoutForm({ locale, currency, catalog, methods }: Props) {
       locale,
       lines: valid,
       customer: { name: g("name"), email: g("email"), phone: g("phone") },
-      shipping: { kind, country: kind === "np" ? "UA" : g("country"), city: g("city"), address: g("address"), postcode: g("postcode") },
+      shipping: { kind, country: kind === "np" ? "UA" : g("country"), city: g("city"), address: g("address"), postcode: g("postcode"), cityRef: g("cityRef"), warehouseRef: g("warehouseRef") },
       gift: { isGift: gift, message: g("giftMessage") },
       note: g("note"),
       payment: chosen,
@@ -125,8 +126,12 @@ export function CheckoutForm({ locale, currency, catalog, methods }: Props) {
               ))}
             </div>
             {kind === "intl" && <Field locale={locale} errors={errors} name="country" label="country" auto="country-name" />}
-            <Field locale={locale} errors={errors} name="city" label="city" auto="address-level2" />
-            <Field locale={locale} errors={errors} name="address" label={kind === "np" ? "np_branch" : "address"} auto="street-address" />
+            {kind === "np" ? <NpPicker locale={locale} errors={errors} /> : (
+              <>
+                <Field locale={locale} errors={errors} name="city" label="city" auto="address-level2" />
+                <Field locale={locale} errors={errors} name="address" label="address" auto="street-address" />
+              </>
+            )}
             {kind === "intl" && <Field locale={locale} errors={errors} name="postcode" label="postcode" auto="postal-code" />}
           </fieldset>
 

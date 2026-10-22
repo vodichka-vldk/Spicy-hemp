@@ -199,7 +199,7 @@ create table public.reminders (
 );
 create index reminders_due_idx on public.reminders (due_at) where status in ('pending','snoozed');
 
--- ---------- e-commerce: richer order states, events, payments, shipments ----------
+-- ---------- e-commerce: richer order states and an event log (payment and shipment details live in orders.data) ----------
 alter table public.orders drop constraint orders_status_check;
 alter table public.orders add constraint orders_status_check check (status in
   ('new','pending_payment','cod_confirmed','payment_failed','paid','processing','packed','shipped','delivered',
@@ -216,32 +216,6 @@ create table public.order_events (
   note text
 );
 create index order_events_order_idx on public.order_events (order_id, ts);
-
-create table public.payments (
-  id uuid primary key default gen_random_uuid(),
-  order_id text not null references public.orders (id) on delete cascade,
-  provider text not null check (provider in ('cod','stripe','liqpay')),
-  status text not null default 'pending' check (status in ('pending','succeeded','failed','refunded')),
-  amount_minor integer not null check (amount_minor >= 0),
-  currency text not null default 'UAH' check (currency in ('UAH','EUR')),
-  provider_ref text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-create unique index payments_provider_ref_uidx on public.payments (provider, provider_ref) where provider_ref is not null;
-create trigger payments_touch before update on public.payments for each row execute function public.touch_updated_at();
-
-create table public.shipments (
-  id uuid primary key default gen_random_uuid(),
-  order_id text not null references public.orders (id) on delete cascade,
-  carrier text not null default 'nova_poshta',
-  ttn text,
-  status text not null default 'created',
-  city text,
-  warehouse text,
-  updated_at timestamptz not null default now()
-);
-create trigger shipments_touch before update on public.shipments for each row execute function public.touch_updated_at();
 
 -- ---------- allowed state transitions (mirrors src/lib/domain.ts) ----------
 create table public.item_transitions (from_status text not null, to_status text not null, primary key (from_status, to_status));
@@ -292,16 +266,6 @@ begin
 end $$;
 create trigger orders_status_guard before update of status on public.orders for each row execute function public.enforce_order_transition();
 
--- every status change is recorded (actor defaults to system; the app can insert richer events itself and set app.skip_order_event)
-create or replace function public.log_order_status() returns trigger language plpgsql as $$
-begin
-  if new.status is distinct from old.status and coalesce(current_setting('app.skip_order_event', true), '') <> 'on' then
-    insert into public.order_events (order_id, from_status, to_status, actor_type) values (new.id, old.status, new.status, 'system');
-  end if;
-  return new;
-end $$;
-create trigger orders_status_log after update of status on public.orders for each row execute function public.log_order_status();
-
 -- ---------- backfill: legacy pots become single items ----------
 insert into public.items (code, kind, batch, status, ready_on, order_id)
 select code, 'single', batch,
@@ -338,8 +302,6 @@ alter table public.reviews enable row level security;
 alter table public.care_templates enable row level security;
 alter table public.reminders enable row level security;
 alter table public.order_events enable row level security;
-alter table public.payments enable row level security;
-alter table public.shipments enable row level security;
 alter table public.item_transitions enable row level security;
 alter table public.order_transitions enable row level security;
 
@@ -358,7 +320,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['owners','products','product_species','product_content','items','item_species','item_content',
-    'journal_entries','questions','reviews','care_templates','reminders','order_events','payments','shipments',
+    'journal_entries','questions','reviews','care_templates','reminders','order_events',
     'batches','orders','pots','scan_events','item_transitions','order_transitions'] loop
     execute format('create policy "admins manage" on public.%I for all using (public.is_admin()) with check (public.is_admin())', t);
   end loop;

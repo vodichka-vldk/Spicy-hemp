@@ -4,6 +4,7 @@ import type { Locale } from "@/lib/types";
 import { t } from "@/lib/i18n";
 import { CartBadge } from "./CartBadge";
 import { LangSwitch } from "./LangSwitch";
+import { Logo } from "./Logo";
 
 
 export function Header({ locale }: { locale: Locale }) {
@@ -16,9 +17,7 @@ export function Header({ locale }: { locale: Locale }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
       <div className="container-x flex h-14 items-center justify-between gap-3">
-        <Link href={`/${locale}`} className="font-display text-xl font-bold text-leaf no-underline" aria-label={t(locale, "nav_home")}>
-          🌿 {t(locale, "brand")}
-        </Link>
+        <Logo home={`/${locale}`} label={t(locale, "nav_home")}>🌿 {t(locale, "brand")}</Logo>
         <nav aria-label="Main" className="hidden items-center gap-6 md:flex">
           {items.map((i) => (
             <Link key={i.href} href={i.href} className="font-medium text-ink no-underline hover:text-leaf">{i.label}</Link>

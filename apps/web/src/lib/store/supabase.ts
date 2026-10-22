@@ -1,4 +1,4 @@
-import type { Item, Order, Pot, Review, ScanEvent, Store } from "./types";
+import type { Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
 // Thin PostgREST client (no SDK needed). Tables are defined in supabase/migrations.
 const url = () => process.env.SUPABASE_URL!.replace(/\/$/, "");
@@ -57,6 +57,16 @@ export const supabaseStore: Store = {
     const next = { ...cur, ...patch };
     await rest(`orders?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(orderRow(next)) });
     return next;
+  },
+  async addOrderEvent(e) {
+    await rest("order_events", { method: "POST", body: JSON.stringify({ order_id: e.orderId, ts: e.ts, from_status: e.from, to_status: e.to, actor_type: e.actorType, actor: e.actor ?? null, note: e.note ?? null }) });
+  },
+  async listOrderEvents(orderId) {
+    const rows = await rest<Array<Record<string, unknown>>>(`order_events?order_id=eq.${encodeURIComponent(orderId)}&select=*&order=ts.asc`);
+    return rows.map((r): OrderEvent => ({
+      id: String(r.id), orderId: String(r.order_id), ts: String(r.ts), from: (r.from_status as OrderEvent["from"]) ?? null, to: r.to_status as OrderEvent["to"],
+      actorType: r.actor_type as OrderEvent["actorType"], ...(r.actor ? { actor: String(r.actor) } : {}), ...(r.note ? { note: String(r.note) } : {}),
+    }));
   },
   async getPot(code) {
     const rows = await rest<Pot[]>(`pots?code=eq.${encodeURIComponent(code)}&select=code,species,batch,plantedOn:planted_on,status,orderId:order_id`);

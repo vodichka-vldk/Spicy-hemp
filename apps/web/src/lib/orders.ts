@@ -8,7 +8,7 @@ export type OrderInput = {
   locale: Locale;
   lines: CartLine[];
   customer: { name: string; email: string; phone: string };
-  shipping: { kind: "np" | "intl"; country: string; city: string; address: string; postcode?: string };
+  shipping: { kind: "np" | "intl"; country: string; city: string; address: string; postcode?: string; cityRef?: string; warehouseRef?: string };
   gift?: { isGift: boolean; message?: string };
   note?: string;
   payment: PaymentMethod;
@@ -83,7 +83,10 @@ export function validateOrder(input: unknown): { ok: true; value: OrderInput } |
       locale,
       lines,
       customer: { name, email, phone: normalisePhone(phone) },
-      shipping: { kind, country, city, address, postcode: postcode || undefined },
+      shipping: {
+        kind, country, city, address, postcode: postcode || undefined,
+        ...(kind === "np" && isRef(i.shipping?.cityRef) && isRef(i.shipping?.warehouseRef) ? { cityRef: i.shipping.cityRef, warehouseRef: i.shipping.warehouseRef } : {}),
+      },
       gift: { isGift: Boolean(i.gift?.isGift), message: str(i.gift?.message).slice(0, 300) || undefined },
       note: str(i.note).slice(0, 500) || undefined,
       payment: i.payment as PaymentMethod,
@@ -91,6 +94,9 @@ export function validateOrder(input: unknown): { ok: true; value: OrderInput } |
     },
   };
 }
+
+/** Nova Poshta refs are GUIDs. */
+export const isRef = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 
 export function newOrderId(now = new Date()): string {
   const d = now.toISOString().slice(2, 10).replace(/-/g, "");

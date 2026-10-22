@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Alert } from "@/ds";
 import { dict } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 
@@ -24,15 +25,9 @@ export function PotContext({ locale, slug }: { locale: Locale; slug: string }) {
   if (!info) return null;
   const date = new Date(info.plantedOn + "T00:00:00Z").toLocaleDateString(locale === "uk" ? "uk-UA" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   return (
-    <div className="card flex items-start gap-3 border-leaf bg-soft p-4" role="status">
-      <span className="text-2xl" aria-hidden>🏺</span>
-      <div>
-        <p className="font-semibold">{dict.scan_hello[locale]}</p>
-        <p className="text-sm text-muted">
-          {dict.your_pot[locale]} · {dict.batch[locale]} {info.batch} · {dict.planted[locale]} {date}
-        </p>
-        <p className="mt-1 font-mono text-xs text-muted">{info.code.slice(0, 4)}-{info.code.slice(4)}</p>
-      </div>
-    </div>
+    <Alert tone="success" title={dict.scan_hello[locale]}>
+      {dict.your_pot[locale]} · {dict.batch[locale]} {info.batch} · {dict.planted[locale]} {date}
+      <span className="mt-1 block font-mono text-xs">{info.code.slice(0, 4)}-{info.code.slice(4)}</span>
+    </Alert>
   );
 }

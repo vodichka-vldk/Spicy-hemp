@@ -44,8 +44,8 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
       </form>
       <nav className="flex flex-wrap gap-2" aria-label="Фільтри">
         {tab(`Усе (${all.length})`, "all", "all")}
-        {tab("🧺 Кошики", "set", "all")}
-        {tab("🌿 Рослини", "pot", "all")}
+        {tab("Кошики", "set", "all")}
+        {tab("Рослини", "pot", "all")}
         {tab(`Опубліковано (${count("published")})`, "all", "published")}
         {tab(`Чернетки (${count("draft")})`, "all", "draft")}
         {tab(`Архів (${count("archived")})`, "all", "archived")}
@@ -67,7 +67,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
                 <tr key={p.slug} className="border-b border-line align-top last:border-0">
                   <td className="p-3">
                     <Link href={`/admin/catalog/${p.slug}`} className="font-semibold text-ink">{productTitle(p, "uk")}</Link>
-                    <div className="text-xs text-muted">{p.kind === "set" ? "🧺 кошик" : "🌿 рослина"} · {p.slug}{edited.has(p.slug) ? " · змінено" : ""}</div>
+                    <div className="text-xs text-muted">{p.kind === "set" ? "кошик" : "рослина"} · {p.slug}{edited.has(p.slug) ? " · змінено" : ""}</div>
                   </td>
                   <td className="py-3 pr-3 text-muted">{p.herbs.map((h) => getHerb(h)?.names.uk ?? h).join(", ")}</td>
                   <td className="py-3 pr-3">

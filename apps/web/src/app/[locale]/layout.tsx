@@ -4,12 +4,13 @@ import { CartProvider } from "@/components/CartProvider";
 import { BottomNav, Footer, Header } from "@/components/SiteChrome";
 import { isLocale, locales, t } from "@/lib/i18n";
 import { siteUrl } from "@/lib/payments";
+import "@/ds/fonts";
 import "../globals.css";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#faf7f0" }, { media: "(prefers-color-scheme: dark)", color: "#131916" }],
+  themeColor: "#25614a",
 };
 
 export function generateStaticParams() {
@@ -32,7 +33,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme="garden">
       <body className="pb-nav">
         <a href="#main" className="skip">{t(locale, "skip")}</a>
         <CartProvider>

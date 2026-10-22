@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Alert, AppBar, Badge, Button, EmptyState } from "@/ds";
 
 type Q = { id: string; body: string; answer: string | null; status: string; createdAt: string };
 type Item = { code: string; label: string; name: string | null; title: string | null; activatedAt: string | null; questions: Q[] };
@@ -73,11 +74,7 @@ export function MiniApp({ bot }: { bot: string }) {
   if (initData === null) return <p className="text-muted">{t.loading}</p>;
   if (!initData) {
     return (
-      <div className="card p-5">
-        <h1 className="text-2xl font-bold text-leaf">Spicy Hemp</h1>
-        <p className="mt-2">{t.openIn}</p>
-        {bot && <a className="btn btn-primary mt-4" href={`https://t.me/${bot}`}>Telegram</a>}
-      </div>
+      <EmptyState icon="qr-code" title="Spicy Hemp" text={t.openIn} action={bot ? <Button variant="accent" href={`https://t.me/${bot}`}>Telegram</Button> : undefined} />
     );
   }
   if (!me) return <p className="text-muted">{msg ? t.error : t.loading}</p>;
@@ -86,29 +83,26 @@ export function MiniApp({ bot }: { bot: string }) {
   const note = msg && (t as unknown as Record<string, string>)[msg];
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-3xl font-bold text-leaf">{t.title}</h1>
-        <p className="text-muted">{t.hello(me.owner.firstName)}</p>
-      </header>
-      {note && <p role="alert" className="rounded-lg bg-soft p-3 text-sm font-semibold text-clay">{note}</p>}
+      <AppBar title={t.title} eyebrow={t.hello(me.owner.firstName)} />
+      {note && <Alert tone="danger">{note}</Alert>}
 
       {pending && (
-        <section className="card p-4">
-          <p className="font-semibold">{t.confirmQ(pending)}</p>
-          <button className="btn btn-primary mt-3" onClick={() => void activate(pending)}>{t.confirm}</button>
+        <section className="sh-surface sh-stack">
+          <p className="label">{t.confirmQ(pending)}</p>
+          <Button variant="accent" onClick={() => void activate(pending)}>{t.confirm}</Button>
         </section>
       )}
 
-      {me.items.length === 0 && !pending && <p className="card p-4 text-muted">{t.empty}</p>}
+      {me.items.length === 0 && !pending && <EmptyState icon="sprout" title={t.title} text={t.empty} />}
       <ul className="space-y-3">
         {me.items.map((i) => (<PotRow key={i.code} item={i} t={t} call={call} symptoms={me.symptoms} reload={() => load(initData!)} />))}
       </ul>
 
-      <section className="card p-4">
-        <h2 className="font-semibold">{t.addCode}</h2>
+      <section className="sh-surface">
+        <h2 className="h3">{t.addCode}</h2>
         <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); void activate(code.toUpperCase().replace(/[^A-Z0-9]/g, "")); }}>
           <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t.codePh} aria-label={t.codePh} maxLength={12} autoCapitalize="characters" />
-          <button className="btn btn-ghost" type="submit">{t.add}</button>
+          <Button variant="secondary" type="submit">{t.add}</Button>
         </form>
       </section>
     </div>
@@ -135,12 +129,12 @@ function PotRow({ item, t, call, symptoms, reload }: { item: Item; t: (typeof TE
     if (r.status === 200) setName((r.json.name as string | null) ?? "");
   };
   return (
-    <li className="card p-4">
-      <p className="text-xs uppercase tracking-widest text-muted">{item.label}</p>
-      <p className="text-lg font-bold">{item.name ?? item.title ?? item.label}</p>
+    <li className="sh-surface">
+      <p className="overline sh-muted">{item.label}</p>
+      <p className="title">{item.name ?? item.title ?? item.label}</p>
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); void save(); }}>
         <input className="input" value={name} onChange={(e) => { setName(e.target.value); setState(""); }} placeholder={t.namePh} aria-label={t.name} maxLength={60} />
-        <button className="btn btn-primary" type="submit">{t.save}</button>
+        <Button variant="accent" type="submit">{t.save}</Button>
       </form>
       {state && <p role="status" className="mt-1 text-sm text-muted">{state === "saved" ? t.saved : t.error}</p>}
       <a className="mt-2 inline-block text-sm text-leaf underline" href={`/p/${item.code}`}>{t.card}</a>
@@ -153,10 +147,10 @@ function PotRow({ item, t, call, symptoms, reload }: { item: Item; t: (typeof TE
             {symptoms.map((s) => (<option key={s.key} value={s.key}>{s.label}</option>))}
           </select>
           <textarea className="input" rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.askPh} aria-label={t.askPh} maxLength={1000} required />
-          <button className="btn btn-primary" type="submit">{t.send}</button>
+          <Button variant="accent" type="submit">{t.send}</Button>
         </form>
-        {asked && <p role="status" className="mt-2 text-sm font-semibold">{t.sent}</p>}
-        {hint && <p className="mt-2 rounded-lg bg-soft p-3 text-sm"><b>{t.firstAid}:</b> {hint.fix}</p>}
+        {asked && <div className="mt-2"><Alert tone="success">{t.sent}</Alert></div>}
+        {hint && <div className="mt-2"><Alert tone="info" title={t.firstAid}>{hint.fix}</Alert></div>}
         {item.questions.length > 0 && (
           <ul className="mt-3 space-y-2 text-sm">
             {item.questions.map((q) => (

@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { Accordion } from "@/components/HerbParts";
+import { AddToCart } from "@/components/AddToCart";
 import { GardenArt } from "@/components/GardenArt";
-import { ProductBuy } from "@/components/ProductGallery";
+import { ProductImage } from "@/components/ProductGallery";
+import { Accordion, Alert, Breadcrumbs, FactTile, Grid, PlantCard, PlantHero, Rating, ReviewCard } from "@/ds";
 import { cardSections, productFacts } from "@/lib/card";
 import { getHerb } from "@/lib/content";
 import { t } from "@/lib/i18n";
@@ -29,93 +29,85 @@ export async function ProductView({ p, locale, preview = false }: { p: Product; 
     offers: { "@type": "Offer", price: (priceMinor(p.priceUah, cur) / 100).toFixed(2), priceCurrency: cur, availability: "https://schema.org/InStock" },
   };
   const steps = [1, 2, 3].map((n) => ({ n, title: t(locale, `next_${n}_t` as "next_1_t"), text: t(locale, `next_${n}_d` as "next_1_d") }));
+  const title = productTitle(p, locale);
+  const single = herbs.length === 1 ? herbs[0] : null;
   return (
     <div className="container-x py-6 md:py-10">
       {!preview && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />}
-      <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted">
-        <Link href={`/${locale}/shop`} className="hover:text-leaf">{t(locale, "nav_shop")}</Link> / <span>{productTitle(p, locale)}</span>
-      </nav>
-
-      <div className="grid gap-8 md:grid-cols-2 md:items-start">
-        <div className="md:sticky md:top-24"><ProductBuy slug={p.slug} colors={herbs.map((h) => h.color)} locale={locale} photos={(p.photos ?? []).map(photoUrl)} alt={productTitle(p, locale)} preview={preview} /></div>
-
-        <div className="space-y-8">
-          <header>
-            <h1 className="text-4xl font-bold text-leaf">{productTitle(p, locale)}</h1>
-            {avg && <p className="mt-1"><a href="#reviews" className="text-amber-600 no-underline" aria-label={`${avg} / 5`}>★ {avg}</a> <a href="#reviews" className="text-sm text-muted">({reviews.length})</a></p>}
-            <p className="mt-2 text-3xl font-bold">{price}</p>
-            <p className="text-sm text-muted">{t(locale, "price_note")} · {t(locale, p.stockMode === "in_stock" ? "in_stock" : "made_to_order")}</p>
-            <p className="mt-4 text-lg">{p.blurb ? p.blurb[locale] : herbs[0].tagline[locale]}</p>
-            <p className="mt-2 text-sm text-muted">🌱 {t(locale, "buy_now_note")}</p>
-          </header>
-
-          <ul className="grid grid-cols-2 gap-3" aria-label="Facts">
-            {facts.map((f) => (
-              <li key={f.label} className="card p-3">
-                <span aria-hidden>{f.icon}</span> <span className="text-xs uppercase tracking-wide text-muted">{f.label}</span>
-                <p className="mt-1 font-semibold">{f.value}</p>
-              </li>
-            ))}
-          </ul>
-
-          <section>
-            <h2 className="text-xl font-bold">{t(locale, "includes")}</h2>
-            <ul className="mt-3 grid gap-3">
-              {herbs.map((h) => (
-                <li key={h.slug}>
-                  <Link href={`/${locale}/plants/${h.slug}`} className="card flex items-center gap-3 p-3 no-underline">
-                    <span className="block h-16 w-16 shrink-0 overflow-hidden rounded-xl"><GardenArt colors={[h.color]} /></span>
-                    <span className="min-w-0">
-                      <span className="block font-semibold text-ink">{h.names[locale]} <span className="text-sm font-normal italic text-muted">{h.latin}</span></span>
-                      <span className="block text-sm text-muted">{h.tagline[locale]}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-xl font-bold">{t(locale, "product_care_title")}</h2>
-            <div className="space-y-2">{sections.map((s, i) => (<Accordion key={s.key} title={s.title} open={i === 0}><p>{s.body}</p></Accordion>))}</div>
-          </section>
-
-          {reviews.length > 0 && (
-            <section aria-labelledby="reviews">
-              <h2 id="reviews" className="text-xl font-bold">{t(locale, "reviews_title")}</h2>
-              <p className="mt-1 text-sm text-muted">{t(locale, "reviews_count", { n: reviews.length, avg: avg ?? 0 })}</p>
-              <ul className="mt-3 space-y-3">
-                {reviews.map((r) => (
-                  <li key={r.id} className="card p-4">
-                    <p className="text-amber-600" role="img" aria-label={`${r.rating} / 5`}>{"★".repeat(r.rating)}<span className="text-line">{"★".repeat(5 - r.rating)}</span></p>
-                    {r.body && <p className="mt-2">{r.body}</p>}
-                    {r.photos.length > 0 && (
-                      <ul className="mt-3 flex gap-2">
-                        {r.photos.map((ph) => { const url = reviewPhotoUrl(ph); return url ? (<li key={ph}><img src={url} alt="" loading="lazy" className="h-20 w-20 rounded-xl object-cover" /></li>) : null; })}
-                      </ul>
-                    )}
-                    {r.authorName && <p className="mt-2 text-sm text-muted">— {r.authorName}</p>}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-xs text-muted">{t(locale, "reviews_note")}</p>
-            </section>
-          )}
-
-          {basket && (
-            <section>
-              <h2 className="mb-3 text-xl font-bold">{t(locale, "product_next_title")}</h2>
-              <ol className="space-y-3">
-                {steps.map((s) => (
-                  <li key={s.n} className="flex gap-3">
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-soft font-bold text-leaf">{s.n}</span>
-                    <span><span className="block font-semibold">{s.title}</span><span className="text-sm text-muted">{s.text}</span></span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
+      <div className="sh-stack-lg">
+        <div className="sh-hide-mobile">
+          <Breadcrumbs items={[{ label: t(locale, "nav_shop"), href: `/${locale}/shop` }, { label: title }]} />
         </div>
+
+        <PlantHero
+          name={title}
+          latin={single?.latin}
+          tagline={p.blurb ? p.blurb[locale] : herbs[0].tagline[locale]}
+          badges={[{ label: t(locale, p.stockMode === "in_stock" ? "in_stock" : "made_to_order"), tone: "success", icon: "circle-check" }]}
+          image={<ProductImage colors={herbs.map((h) => h.color)} photos={(p.photos ?? []).map(photoUrl)} alt={title} />}
+          price={price}
+          priceNote={t(locale, "price_note")}
+        >
+          <div className="sh-stack" style={{ marginTop: 12 }}>
+            {avg && <a href="#reviews" className="no-underline" aria-label={`${avg} / 5`}><Rating value={avg} count={reviews.length} /></a>}
+            {!preview && <AddToCart slug={p.slug} locale={locale} />}
+          </div>
+        </PlantHero>
+
+        <Grid cols="facts">
+          {facts.map((f) => (<FactTile key={f.label} icon={f.icon} label={f.label} value={f.value} />))}
+        </Grid>
+
+        <Alert tone="info" title={t(locale, "warranty_title")}>{t(locale, "buy_now_note")}</Alert>
+
+        <section>
+          <h2 className="mb-4">{t(locale, "includes")}</h2>
+          <Grid cols="cards">
+            {herbs.map((h, i) => (
+              <PlantCard key={h.slug} href={`/${locale}/plants/${h.slug}`} name={h.names[locale]} latin={h.latin} tone={(["sage", "sand", "sky", "card"] as const)[i % 4]} image={<GardenArt colors={[h.color]} />} />
+            ))}
+          </Grid>
+        </section>
+
+        <section>
+          <h2 className="mb-4">{t(locale, "product_care_title")}</h2>
+          <div>{sections.map((s, i) => (<Accordion key={s.key} title={s.title} open={i === 0}><p>{s.body}</p></Accordion>))}</div>
+        </section>
+
+        {reviews.length > 0 && (
+          <section aria-labelledby="reviews">
+            <h2 id="reviews">{t(locale, "reviews_title")}</h2>
+            <p className="mb-4 mt-1 text-muted">{t(locale, "reviews_count", { n: reviews.length, avg: avg ?? 0 })}</p>
+            <Grid cols="two">
+              {reviews.map((r) => (
+                <div key={r.id}>
+                  <ReviewCard rating={r.rating} text={r.body ?? ""} author={r.authorName ?? ""} />
+                  {r.photos.length > 0 && (
+                    <ul className="mt-2 flex gap-2">
+                      {r.photos.map((ph) => { const url = reviewPhotoUrl(ph); return url ? (<li key={ph}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={url} alt="" loading="lazy" className="h-20 w-20 rounded-xl object-cover" /></li>) : null; })}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </Grid>
+            <p className="mt-2 text-xs text-muted">{t(locale, "reviews_note")}</p>
+          </section>
+        )}
+
+        {basket && (
+          <section>
+            <h2 className="mb-4">{t(locale, "product_next_title")}</h2>
+            <Grid cols="steps">
+              {steps.map((s) => (
+                <div key={s.n} className="sh-surface sh-stack">
+                  <span className="sh-fact-icon">{s.n}</span>
+                  <h3 className="title" style={{ margin: 0 }}>{s.title}</h3>
+                  <p className="body sh-muted" style={{ margin: 0 }}>{s.text}</p>
+                </div>
+              ))}
+            </Grid>
+          </section>
+        )}
       </div>
     </div>
   );

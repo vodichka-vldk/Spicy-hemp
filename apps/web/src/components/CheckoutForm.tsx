@@ -136,7 +136,7 @@ export function CheckoutForm({ locale, currency, catalog, methods }: Props) {
           </fieldset>
 
           <fieldset className="card space-y-4 p-5">
-            <legend className="px-1 text-xl font-bold">🎁 {dict.gift[locale]}</legend>
+            <legend className="px-1 text-xl font-bold">{dict.gift[locale]}</legend>
             <label className="flex items-center gap-3"><input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} className="h-5 w-5" /><span>{dict.gift[locale]}</span></label>
             {gift && (
               <label className="field">

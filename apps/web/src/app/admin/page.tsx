@@ -40,7 +40,7 @@ export default async function Today() {
 
       <section className="card p-5">
         <h2 className="mb-3 text-xl font-bold">Що робити зараз</h2>
-        {todo.length === 0 && returns.length === 0 ? <p className="text-muted">Усе опрацьовано. 🌿</p> : (
+        {todo.length === 0 && returns.length === 0 ? <p className="text-muted">Усе опрацьовано. </p> : (
           <ul className="divide-y divide-line">
             {todo.slice(0, 8).map((o) => (
               <li key={o.id}><Link href={`/admin/orders/${o.id}`} className="flex flex-wrap gap-x-3 py-2 no-underline"><span className="font-mono font-semibold text-ink">{o.id}</span><span className="text-ink">{o.customer.name}</span><span className="ml-auto text-leaf">→ {nextAction(o)}</span></Link></li>

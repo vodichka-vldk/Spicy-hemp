@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { HerbCard } from "@/components/HerbParts";
+import { HerbCard, toneAt } from "@/components/HerbParts";
+import { Grid } from "@/ds";
 import { getFamilies, getFamily, herbsOfFamily } from "@/lib/content";
 import { isLocale, locales, pick } from "@/lib/i18n";
 
@@ -26,9 +27,11 @@ export default async function FamilyPage({ params }: P) {
       <p className="text-sm italic text-muted">{f.latin}</p>
       <h1 className="text-4xl font-bold text-leaf">{f.names[locale]}</h1>
       <p className="mt-3 max-w-2xl text-lg text-muted">{pick(f.description, locale)}</p>
-      <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {list.map((h) => (<li key={h.slug}><HerbCard herb={h} locale={locale} /></li>))}
-      </ul>
+      <div className="mt-8">
+        <Grid cols="cards">
+          {list.map((h, i) => (<HerbCard key={h.slug} herb={h} locale={locale} tone={toneAt(i)} />))}
+        </Grid>
+      </div>
     </div>
   );
 }

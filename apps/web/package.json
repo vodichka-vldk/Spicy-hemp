@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "ds:tokens": "node scripts/build-tokens.mjs",
     "pots:generate": "tsx scripts/generate-pots.mts",
     "sync:notion": "tsx scripts/sync-notion.mts",
     "notion:export": "tsx scripts/export-notion-csv.mts",
@@ -15,6 +16,8 @@
     "check:connections": "tsx scripts/check-connections.mts"
   },
   "dependencies": {
+    "@fontsource/onest": "^5.3.1",
+    "@fontsource/raleway": "^5.3.0",
     "next": "^15.5.27",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",

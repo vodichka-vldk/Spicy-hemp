@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Accordion } from "@/components/HerbParts";
+import { Accordion, toneAt } from "@/components/HerbParts";
+import { Button, Grid, PlantCard } from "@/ds";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { GardenArt, gardenRatio } from "@/components/GardenArt";
 import { PotArt } from "@/components/PotArt";
@@ -49,7 +50,7 @@ export default async function GardenCard({ params }: P) {
 
       <header className="mt-5">
         <p className="text-xs uppercase tracking-widest text-muted">{t(locale, "garden_id")}: {String(item.displayNo).padStart(3, "0")}</p>
-        <h1 className="mt-1 text-3xl font-bold">{title}</h1>
+        <h1 className="plant-name mt-1">{title}</h1>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
           <span className="badge">{t(locale, `item_status_${item.status}` as DictKey)}</span>
           <span>{t(locale, "garden_made", { date: made })}</span>
@@ -57,10 +58,10 @@ export default async function GardenCard({ params }: P) {
       </header>
 
       {bot && (
-        <a href={`https://t.me/${bot}?startapp=${code}`} className="card mt-5 block p-4 no-underline">
-          <span className="font-bold text-leaf">{t(locale, "garden_open_tg")} →</span>
-          <span className="mt-1 block text-sm text-muted">{t(locale, "garden_open_tg_hint")}</span>
-        </a>
+        <div className="sh-surface sh-stack mt-5">
+          <p className="body-sm sh-muted">{t(locale, "garden_open_tg_hint")}</p>
+          <Button variant="action" size="lg" icon="arrow-up-right" href={`https://t.me/${bot}?startapp=${code}`}>{t(locale, "garden_open_tg")}</Button>
+        </div>
       )}
 
       <div className="mt-5 space-y-2">
@@ -69,16 +70,9 @@ export default async function GardenCard({ params }: P) {
 
       <section className="mt-8">
         <h2 className="mb-3 text-xl font-bold">{t(locale, "garden_composition")}</h2>
-        <ul className="grid grid-cols-2 gap-3">
-          {herbs.map((h) => (
-            <li key={h.slug}>
-              <Link href={`/${locale}/plants/${h.slug}`} className="card block overflow-hidden no-underline">
-                <div className="aspect-[3/2]"><PotArt color={h.color} /></div>
-                <div className="p-3"><h3 className="font-bold text-ink">{h.names[locale]}</h3><p className="text-xs text-muted">{h.latin}</p></div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Grid cols="cards">
+          {herbs.map((h, i) => (<PlantCard key={h.slug} href={`/${locale}/plants/${h.slug}`} name={h.names[locale]} latin={h.latin} tone={toneAt(i)} image={<PotArt color={h.color} />} />))}
+        </Grid>
       </section>
     </div>
   );

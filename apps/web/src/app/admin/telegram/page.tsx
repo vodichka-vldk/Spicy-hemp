@@ -1,3 +1,4 @@
+import { Icon } from "@/ds";
 import { adminIds } from "@/lib/bot";
 import { store } from "@/lib/store";
 import { tgCall } from "@/lib/telegram";
@@ -15,7 +16,7 @@ export default async function TelegramAdmin({ searchParams }: { searchParams: Pr
   const hook = token ? await tgCall<{ url?: string; last_error_message?: string }>("getWebhookInfo", {}) : null;
   const admins = await adminIds(store());
   const row = (ok: boolean, label: string, hint?: string) => (
-    <li className="flex gap-2"><span aria-hidden>{ok ? "✅" : "⬜"}</span><span>{label}{!ok && hint ? <span className="text-muted"> — {hint}</span> : null}</span></li>
+    <li className="flex gap-2"><span aria-hidden><Icon name={ok ? "circle-check" : "circle-alert"} size={18} /></span><span>{label}{!ok && hint ? <span className="text-muted"> — {hint}</span> : null}</span></li>
   );
   return (
     <div className="space-y-6">

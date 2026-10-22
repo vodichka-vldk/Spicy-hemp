@@ -5,7 +5,7 @@ export function PotArt({ color, glaze = "sage", label }: { color: string; glaze?
   const pot = glazeColor[glaze];
   return (
     <svg viewBox="0 0 200 200" role="img" aria-label={label ?? ""} aria-hidden={label ? undefined : true} className="h-full w-full">
-      <rect width="200" height="200" fill="var(--soft)" />
+      <rect width="200" height="200" fill="var(--bg-soft)" />
       <g fill={color}>
         <path d="M100 112c-4-34-22-56-44-62 4 30 20 54 44 62z" opacity=".9" />
         <path d="M100 112c4-38 24-62 48-68-4 34-22 58-48 68z" />

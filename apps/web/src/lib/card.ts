@@ -64,9 +64,9 @@ export function productFacts(herbs: Herb[], locale: Locale): Fact[] {
   const pet = order(herbs.map((h) => h.petSafe), ["caution", "unknown", "safe"]);
   const every = dmin === dmax ? `${dmin}` : `${dmin}–${dmax}`;
   return [
-    { icon: "☀️", label: locale === "uk" ? "Світло" : "Light", value: LIGHT[light][locale] },
-    { icon: "💧", label: locale === "uk" ? "Полив" : "Watering", value: locale === "uk" ? `кожні ${every} дн.` : `every ${every} days` },
-    { icon: "🎚", label: locale === "uk" ? "Складність" : "Difficulty", value: DIFFICULTY[diff][locale] },
-    { icon: "🐾", label: locale === "uk" ? "Тварини" : "Pets", value: PETS[pet][locale] },
+    { icon: "sun", label: locale === "uk" ? "Світло" : "Light", value: LIGHT[light][locale] },
+    { icon: "droplet", label: locale === "uk" ? "Полив" : "Watering", value: locale === "uk" ? `кожні ${every} дн.` : `every ${every} days` },
+    { icon: "sprout", label: locale === "uk" ? "Складність" : "Difficulty", value: DIFFICULTY[diff][locale] },
+    { icon: "paw-print", label: locale === "uk" ? "Тварини" : "Pets", value: PETS[pet][locale] },
   ];
 }

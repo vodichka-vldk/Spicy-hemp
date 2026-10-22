@@ -39,7 +39,7 @@ export default async function Pots() {
       </section>
       <section>
         <h2 className="mb-2 text-xl font-bold">Друк етикеток</h2>
-        <ul className="flex flex-wrap gap-2">{batches.map((b) => (<li key={b}><Link className="chip" href={`/admin/pots/print?batch=${encodeURIComponent(b)}`}>🖨 {b}</Link></li>))}</ul>
+        <ul className="flex flex-wrap gap-2">{batches.map((b) => (<li key={b}><Link className="chip" href={`/admin/pots/print?batch=${encodeURIComponent(b)}`}>{b}</Link></li>))}</ul>
       </section>
       <section className="card overflow-x-auto">
         <table className="w-full text-left text-sm">

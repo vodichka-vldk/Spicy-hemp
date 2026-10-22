@@ -35,7 +35,7 @@ export default async function Editor({ params, searchParams }: { params: Promise
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/admin/catalog" className="text-sm text-muted">← Каталог</Link>
         <h1 className="text-3xl font-bold">{title}</h1>
-        {!isNew && <Link href={`/admin/catalog/${slug}/preview`} className="chip ml-auto">👁 Перегляд</Link>}
+        {!isNew && <Link href={`/admin/catalog/${slug}/preview`} className="chip ml-auto">Перегляд</Link>}
         {product?.status === "published" && <a href={`/uk/shop/${slug}`} className="chip ml-auto" target="_blank" rel="noopener noreferrer">Відкрити на сайті ↗</a>}
       </div>
       {sp.saved && <p role="status" className="rounded-lg bg-soft p-3 text-sm font-semibold">✓ Збережено</p>}
@@ -55,7 +55,7 @@ export default async function Editor({ params, searchParams }: { params: Promise
                     {n === 0 ? <span className="badge">Обкладинка</span> : (
                       <form action={changePhoto}><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="cover" /><button className="chip !min-h-8" type="submit">Зробити обкладинкою</button></form>
                     )}
-                    <form action={changePhoto} className="ml-auto"><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="delete" /><button className="chip !min-h-8" type="submit" aria-label={`Видалити фото ${n + 1}`}>🗑</button></form>
+                    <form action={changePhoto} className="ml-auto"><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="delete" /><button className="chip !min-h-8" type="submit" aria-label={`Видалити фото ${n + 1}`}></button></form>
                   </div>
                 </li>
               ))}

@@ -22,7 +22,7 @@ export default async function Plants({ params }: { params: Promise<{ locale: str
   }));
   return (
     <div className="container-x py-8">
-      <h1 className="mb-6 text-4xl font-bold text-leaf">{t(locale, "nav_plants")}</h1>
+      <h1 className="mb-6">{t(locale, "nav_plants")}</h1>
       <PlantsExplorer herbs={herbs} locale={locale} />
     </div>
   );

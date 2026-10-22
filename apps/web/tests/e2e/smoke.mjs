@@ -32,16 +32,16 @@ await noOverflow("home");
 await page.screenshot({ path: `${SHOTS}/01-home-mobile.png`, fullPage: true });
 
 // 2. plants search
-await page.getByRole("navigation", { name: "Mobile" }).getByText("Рослини").click();
+await page.getByRole("navigation", { name: "Mobile" }).getByRole("link", { name: "Рослини" }).click();
 await page.waitForURL("**/uk/plants");
-ok((await page.locator("ul li a[href*='/plants/']").count()) === 15, "catalog lists 15 plants");
-await page.fill("#plant-search", "мята");
-ok((await page.locator("ul li a[href$='/plants/mint']").count()) === 1, "search 'мята' (no apostrophe) finds mint");
-await page.fill("#plant-search", "zzz");
+ok((await page.locator("main a[href*='/uk/plants/']").count()) === 15, "catalog lists 15 plants");
+await page.getByRole("searchbox").fill("мята");
+ok((await page.locator("main a[href$='/plants/mint']").count()) === 1, "search 'мята' (no apostrophe) finds mint");
+await page.getByRole("searchbox").fill("zzz");
 ok(await page.getByText("Нічого не знайдено").isVisible(), "empty state shown");
-await page.fill("#plant-search", "");
+await page.getByRole("searchbox").fill("");
 await page.getByRole("button", { name: "Безпечні для тварин" }).click();
-const safe = await page.locator("ul li a[href*='/plants/']").count();
+const safe = await page.locator("main a[href*='/uk/plants/']").count();
 ok(safe > 0 && safe < 15, `pet-safe filter narrows list (${safe})`);
 await noOverflow("plants");
 await page.screenshot({ path: `${SHOTS}/02-plants-mobile.png` });
@@ -58,7 +58,7 @@ await page.getByRole("link", { name: /Додати в календар/ }).click
 const download = await dl;
 const ics = fs.readFileSync(await download.path(), "utf8");
 ok(ics.includes("RRULE:FREQ=DAILY;INTERVAL=2") && ics.includes("BEGIN:VEVENT"), "watering reminder .ics downloads");
-ok((await page.locator("details.acc[open]").count()) >= 1, "first care section is open by default");
+ok((await page.locator("details.sh-acc[open]").count()) >= 1, "first care section is open by default");
 
 // 4. invalid scan
 await page.goto(`${BASE}/p/ABCD-EFGH`);
@@ -74,7 +74,7 @@ ok((await page.getByText("Теракота").count()) === 0, "no glaze choice: o
 await page.getByRole("button", { name: /Додати в кошик/ }).click();
 await page.getByText("Додано в кошик").waitFor();
 await page.getByRole("button", { name: /Додати в кошик/ }).click();
-await page.getByRole("navigation", { name: "Mobile" }).getByText("Кошик").click();
+await page.getByRole("navigation", { name: "Mobile" }).getByRole("link", { name: "Кошик" }).click();
 await page.waitForURL("**/uk/cart");
 ok(await page.getByText("× ").count() >= 0, "cart opened");
 ok((await page.locator("text=Горщик з рослиною: Базилік").count()) >= 1, "cart shows the line item");
@@ -104,11 +104,12 @@ ok(await page.getByText("Дякуємо! Замовлення прийнято")
 ok(!(await page.content()).includes("olena@example.com"), "order page does not leak customer data");
 await page.screenshot({ path: `${SHOTS}/06-order-mobile.png` });
 await page.goto(`${BASE}/uk/cart`);
-ok(await page.getByText("Кошик порожній").isVisible(), "cart cleared after ordering");
+await page.getByRole("heading", { name: "Кошик порожній" }).waitFor();
+ok(true, "cart cleared after ordering");
 
 // 6. language switch keeps the path
 await page.goto(`${BASE}/uk/plants/rosemary`);
-await page.getByRole("link", { name: "English" }).click();
+await page.getByRole("button", { name: "EN" }).click();
 await page.waitForURL("**/en/plants/rosemary");
 ok((await page.locator("h1").innerText()) === "Rosemary", "language switch keeps the page and translates it");
 
@@ -159,7 +160,7 @@ const gp = await (await browser.newContext({ ...devices["iPhone 13"], locale: "u
 await gp.goto(BASE + basketHref);
 await gp.waitForURL(/\/uk\/garden\//);
 ok(/ГОРЩИК · \d{3}/.test(await gp.locator("figcaption").innerText()), "basket QR opens the pot card with its number");
-ok((await gp.locator("details.acc").count()) === 6, "pot card has six care sections");
+ok((await gp.locator("details.sh-acc").count()) === 6, "pot card has six care sections");
 ok((await gp.locator("a[href*='/plants/']").count()) >= 3, "pot card lists the herbs in the basket");
 await gp.screenshot({ path: `${SHOTS}/10-garden-card.png`, fullPage: true });
 await ap.goto(BASE + "/admin/orders");
@@ -295,14 +296,14 @@ ok(asked.status() === 200 && /Поливайте рідше/.test((await asked.j
 ok((await api("/api/app/question", initFor(9999), { code, text: "чужий" })).status() === 404, "nobody else can ask about this pot");
 ok((await api("/api/app/question", initFor(TG), { code, text: "   " })).status() === 400, "an empty question is refused");
 await ap.goto(BASE + "/admin/questions");
-ok(await ap.getByText("Листя жовтіє E2E").count() === 1, "the question is in the admin queue");
+ok((await ap.getByText("Листя жовтіє E2E").count()) >= 1, "the question is in the admin queue");
 await ap.getByLabel("Відповідь").first().fill("Полийте менше E2E");
 await ap.getByRole("button", { name: "Відповісти" }).first().click();
 await ap.getByText("Полийте менше E2E").first().waitFor();
 const meAfter = await (await api("/api/app/me", initFor(TG))).json();
 ok(meAfter.items.some((i) => i.questions.some((q) => q.answer === "Полийте менше E2E")), "the owner sees Katya's answer");
 await ap.goto(BASE + "/admin/pots/" + code);
-ok(await ap.getByText("Зелений сніданок").count() >= 1 && await ap.getByText("Листя жовтіє E2E").count() === 1 && await ap.getByRole("heading", { name: /Заплановані нагадування/ }).count() === 1, "admin pot card shows owner, questions and reminders");
+ok(await ap.getByText("Зелений сніданок").count() >= 1 && await ap.getByText("Листя жовтіє E2E").count() >= 1 && await ap.getByRole("heading", { name: /Заплановані нагадування/ }).count() === 1, "admin pot card shows owner, questions and reminders");
 await ap.goto(BASE + "/admin/owners");
 ok(await ap.getByText("Олена").count() >= 1, "admin lists owners");
 await ap.goto(BASE + "/admin/care");

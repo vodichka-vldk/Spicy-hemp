@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import type { Locale } from "@/lib/types";
 import { dict } from "@/lib/i18n";
+import { Chip, Grid, PlantCard, SearchField } from "@/ds";
+import { toneAt } from "./HerbParts";
 import { PotArt } from "./PotArt";
 
 export type HerbLite = {
@@ -38,37 +39,28 @@ export function PlantsExplorer({ herbs, locale }: { herbs: HerbLite[]; locale: L
   }, [herbs, q, f]);
 
   return (
-    <div>
-      <div className="sticky top-14 z-30 -mx-4 border-b border-line bg-paper/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
-        <label className="sr-only" htmlFor="plant-search">{dict.search_ph[locale]}</label>
-        <input id="plant-search" type="search" inputMode="search" autoComplete="off" className="input" placeholder={dict.search_ph[locale]} value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filters">
-          {FILTERS.map((k) => (
-            <button key={k} type="button" className="chip shrink-0" aria-pressed={f === k} onClick={() => setF(k)}>{label[k]}</button>
-          ))}
-        </div>
+    <div className="sh-stack">
+      <SearchField placeholder={dict.search_ph[locale]} value={q} onChange={(e: { target: { value: string } }) => setQ(e.target.value)} />
+      <div className="sh-chiprow" role="group" aria-label="Filters">
+        {FILTERS.map((k) => (<Chip key={k} selected={f === k} onClick={() => setF(k)}>{label[k]}</Chip>))}
       </div>
-      <p className="mt-4 text-sm text-muted" aria-live="polite">{list.length} {dict.results[locale]}</p>
+      <p className="body-sm sh-muted" aria-live="polite">{list.length} {dict.results[locale]}</p>
       {list.length === 0 ? (
-        <p className="card mt-4 p-8 text-center text-muted">{dict.no_results[locale]}</p>
+        <p className="sh-surface text-center sh-muted">{dict.no_results[locale]}</p>
       ) : (
-        <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-          {list.map((h) => (
-            <li key={h.slug}>
-              <Link href={`/${locale}/plants/${h.slug}`} className="card block h-full overflow-hidden no-underline transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="aspect-square"><PotArt color={h.color} /></div>
-                <div className="p-3 sm:p-4">
-                  <h2 className="text-base font-bold text-ink sm:text-lg">{h.name}</h2>
-                  <p className="text-xs italic text-muted sm:text-sm">{h.latin}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="badge">{dict[`diff_${h.difficulty}` as "diff_1"][locale]}</span>
-                    <span className="badge">☀ {h.hours}</span>
-                  </div>
-                </div>
-              </Link>
-            </li>
+        <Grid cols="cards">
+          {list.map((h, i) => (
+            <PlantCard
+              key={h.slug}
+              href={`/${locale}/plants/${h.slug}`}
+              name={h.name}
+              latin={h.latin}
+              tone={toneAt(i)}
+              image={<PotArt color={h.color} />}
+              badges={[{ label: dict[`diff_${h.difficulty}` as "diff_1"][locale], tone: "leaf" }, { label: h.hours, icon: "sun", tone: "neutral" }]}
+            />
           ))}
-        </ul>
+        </Grid>
       )}
     </div>
   );

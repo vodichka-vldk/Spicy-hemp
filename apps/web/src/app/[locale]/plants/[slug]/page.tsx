@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Accordion, HerbCard, QuickFacts, cycleKey, petKey } from "@/components/HerbParts";
+import { Accordion, HerbCard, QuickFacts, cycleKey, petKey, toneAt } from "@/components/HerbParts";
+import { Alert, Breadcrumbs, Button, Grid, Icon, PlantHero } from "@/ds";
 import { PotArt } from "@/components/PotArt";
 import { PotContext } from "@/components/PotContext";
 import { getFamily, getHerb, getHerbs, herbsOfFamily } from "@/lib/content";
@@ -52,37 +53,36 @@ export default async function PlantPage({ params }: P) {
   return (
     <article className="container-x py-6 md:py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted">
-        <Link href={`/${locale}/plants`} className="hover:text-leaf">{t(locale, "nav_plants")}</Link> / <span>{h.names[locale]}</span>
-      </nav>
-
-      <div className="grid gap-6 md:grid-cols-[minmax(0,22rem)_1fr] md:gap-10">
-        <div className="mx-auto w-full max-w-sm overflow-hidden rounded-[2rem] border border-line md:mx-0">
-          <div className="aspect-square"><PotArt color={h.color} label={h.names[locale]} /></div>
-        </div>
-        <div>
-          <h1 className="text-4xl font-bold text-leaf md:text-5xl">{h.names[locale]}</h1>
-          <p className="mt-1 text-lg italic text-muted">{h.latin}</p>
-          <p className="mt-3 text-lg">{h.tagline[locale]}</p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Link href={`/${locale}/families/${fam.slug}`} className="badge no-underline">{t(locale, "sec_family")}: {fam.latin}</Link>
-            <span className="badge">{t(locale, cycleKey(h.cycle))}</span>
-            <span className="badge">{t(locale, "pet")}: {t(locale, petKey(h.petSafe))}</span>
-          </div>
-          <div className="mt-5"><PotContext locale={locale} slug={h.slug} /></div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <a className="btn btn-primary" href={`/api/reminder/${h.slug}?lang=${locale}`} download>🔔 {t(locale, "remind_btn")}</a>
-            <Link className="btn btn-clay" href={`/${locale}/shop/${h.slug}`}>{t(locale, "buy_again")}</Link>
-          </div>
-          <p className="mt-2 text-sm text-muted">{t(locale, "remind_text")}</p>
-        </div>
+      <div className="sh-hide-mobile mb-4">
+        <Breadcrumbs items={[{ label: t(locale, "nav_plants"), href: `/${locale}/plants` }, { label: h.names[locale] }]} />
       </div>
+
+      <PlantHero
+        name={h.names[locale]}
+        latin={h.latin}
+        tagline={h.tagline[locale]}
+        image={<PotArt color={h.color} label={h.names[locale]} />}
+        badges={[
+          { label: `${t(locale, "sec_family")}: ${fam.latin}`, tone: "neutral" },
+          { label: t(locale, cycleKey(h.cycle)), tone: "neutral" },
+          { label: `${t(locale, "pet")}: ${t(locale, petKey(h.petSafe))}`, tone: h.petSafe === "safe" ? "success" : h.petSafe === "caution" ? "warning" : "neutral", icon: "paw-print" },
+        ]}
+        actions={[
+          <a key="r" className="sh-btn v-action s-lg label" href={`/api/reminder/${h.slug}?lang=${locale}`} download><Icon name="bell" size={20} /><span>{t(locale, "remind_btn")}</span></a>,
+          <Button key="b" variant="accent" size="lg" href={`/${locale}/shop/${h.slug}`}>{t(locale, "buy_again")}</Button>,
+        ]}
+      >
+        <div className="sh-stack" style={{ marginTop: 12 }}>
+          <PotContext locale={locale} slug={h.slug} />
+          <p className="body-sm sh-muted">{t(locale, "remind_text")}</p>
+        </div>
+      </PlantHero>
 
       <section className="mt-8" aria-label={t(locale, "quick_facts")}><QuickFacts herb={h} locale={locale} /></section>
 
       <nav aria-label="Sections" className="sticky top-14 z-30 -mx-4 mt-8 flex gap-2 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur sm:mx-0 sm:px-0">
         {[["care", "tab_care"], ["problems", "tab_problems"], ["uses", "tab_uses"], ["varieties", "sec_varieties"]].map(([id, k]) => (
-          <a key={id} href={`#${id}`} className="chip shrink-0 no-underline">{t(locale, k as "tab_care")}</a>
+          <a key={id} href={`#${id}`} className="sh-chip label no-underline">{t(locale, k as "tab_care")}</a>
         ))}
       </nav>
 
@@ -90,13 +90,13 @@ export default async function PlantPage({ params }: P) {
         <div>
           <section id="care" className="scroll-mt-32">
             <h2 className="mb-2 text-2xl font-bold">{t(locale, "tab_care")}</h2>
-            <p className="mb-3 text-muted">💧 {pick(h.waterNote, locale)}. {t(locale, "pot_size")} {h.potCm} cm.</p>
+            <p className="mb-3 flex items-center gap-2 text-muted"><Icon name="droplet" size={18} /> {pick(h.waterNote, locale)}. {t(locale, "pot_size")} {h.potCm} cm.</p>
             {careKeys.map((k, i) => (
               <Accordion key={k} title={t(locale, careTitle[k])} open={i === 0}>
                 <p>{pick(h.sections[k], locale)}</p>
               </Accordion>
             ))}
-            {h.aloneInPot && <p className="mt-4 rounded-xl bg-soft p-3 text-sm">⚠️ {t(locale, "alone")}</p>}
+            {h.aloneInPot && <div className="mt-4"><Alert tone="warning">{t(locale, "alone")}</Alert></div>}
           </section>
 
           <section id="problems" className="mt-10 scroll-mt-32">
@@ -142,9 +142,9 @@ export default async function PlantPage({ params }: P) {
       {siblings.length > 0 && (
         <section className="mt-12">
           <h2 className="mb-4 text-2xl font-bold">{t(locale, "related_family")}</h2>
-          <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {siblings.slice(0, 4).map((s) => (<li key={s.slug}><HerbCard herb={s} locale={locale} /></li>))}
-          </ul>
+          <Grid cols="cards">
+            {siblings.slice(0, 4).map((s, i) => (<HerbCard key={s.slug} herb={s} locale={locale} tone={toneAt(i)} />))}
+          </Grid>
         </section>
       )}
     </article>

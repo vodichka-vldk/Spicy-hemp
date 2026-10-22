@@ -62,7 +62,7 @@ export default async function AdminOrder({ params, searchParams }: { params: Pro
           <p>{o.customer.email}</p>
           <h2 className="mb-2 mt-4 text-lg font-bold">Доставка ({o.shipping.kind === "np" ? "Нова пошта" : "за кордон"})</h2>
           <p>{o.shipping.country} · {o.shipping.city}</p><p>{o.shipping.address}</p>{o.shipping.postcode && <p>{o.shipping.postcode}</p>}
-          {o.gift.isGift && <p className="mt-3 rounded bg-soft p-2">🎁 Подарунок{o.gift.message ? `: ${o.gift.message}` : ""}</p>}
+          {o.gift.isGift && <p className="mt-3 rounded bg-soft p-2">Подарунок{o.gift.message ? `: ${o.gift.message}` : ""}</p>}
           {o.note && <p className="mt-3 text-muted">Коментар клієнта: {o.note}</p>}
         </section>
         <section className="card p-5 text-sm">
@@ -76,7 +76,7 @@ export default async function AdminOrder({ params, searchParams }: { params: Pro
 
       <section className="card p-5">
         <h2 className="mb-2 text-lg font-bold">QR-коди цього замовлення</h2>
-        {short && <p role="alert" className="mb-3 rounded-lg bg-soft p-3 font-semibold text-clay">⚠️ Не вистачає на складі: {short}. Створіть партію в «Горщики й QR» і виділіть ще раз.</p>}
+        {short && <p role="alert" className="mb-3 rounded-lg bg-soft p-3 font-semibold text-clay">Не вистачає на складі: {short}. Створіть партію в «Горщики й QR» і виділіть ще раз.</p>}
         {o.potCodes.length > 0 && !short ? (
           <ul className="flex flex-wrap gap-2">{o.potCodes.map((c) => (<li key={c} className="badge font-mono">{formatCode(c)}</li>))}</ul>
         ) : (

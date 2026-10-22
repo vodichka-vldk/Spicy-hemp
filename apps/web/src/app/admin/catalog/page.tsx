@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Alert, Button, Chip, DataTable, Input } from "@/ds";
+import { PageHeader, Panel, StatusBadge } from "@/ui";
 import { loadProducts } from "@/lib/catalog-server";
 import { getHerb } from "@/lib/content";
 import { productTitle } from "@/lib/shop";
@@ -25,86 +27,77 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
     .filter((p) => !q || p.slug.includes(q) || productTitle(p, "uk").toLowerCase().includes(q) || p.herbs.some((h) => getHerb(h)?.names.uk.toLowerCase().includes(q)))
     .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "set" ? -1 : 1));
   const count = (s: string) => all.filter((p) => p.status === s).length;
-  const tab = (label: string, kind: string, status: string) => {
+  const tab = (label: string, kind: string, status: string, icon?: string) => {
     const on = (sp.kind ?? "all") === kind && (sp.status ?? "all") === status;
-    const href = `/admin/catalog?kind=${kind}&status=${status}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-    return (<Link key={label} href={href} className="chip" aria-current={on ? "page" : undefined}>{label}</Link>);
+    return (<Chip key={label} icon={icon} selected={on} href={`/admin/catalog?kind=${kind}&status=${status}${q ? `&q=${encodeURIComponent(q)}` : ""}`}>{label}</Chip>);
   };
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-bold">Каталог</h1>
-        <Link href="/admin/catalog/new" className="btn btn-primary ml-auto">+ Новий кошик</Link>
-      </div>
+    <div className="sh-stack-lg">
+      <PageHeader title="Каталог" actions={<Button variant="accent" href="/admin/catalog/new" icon="plus">Новий кошик</Button>} />
 
-      <form className="flex flex-wrap gap-2" role="search">
-        <input name="q" defaultValue={sp.q ?? ""} className="input max-w-xs" placeholder="Пошук: назва, рослина, ідентифікатор" aria-label="Пошук" />
+      <form className="flex flex-wrap items-end gap-2" role="search">
+        <div style={{ flex: "1 1 18rem" }}><Input name="q" defaultValue={sp.q ?? ""} icon="search" placeholder="Пошук: назва, рослина, ідентифікатор" aria-label="Пошук" /></div>
         <input type="hidden" name="kind" value={sp.kind ?? "all"} /><input type="hidden" name="status" value={sp.status ?? "all"} />
-        <button className="btn btn-ghost" type="submit">Знайти</button>
+        <Button variant="secondary" type="submit">Знайти</Button>
       </form>
-      <nav className="flex flex-wrap gap-2" aria-label="Фільтри">
+      <nav className="sh-chiprow" aria-label="Фільтри">
         {tab(`Усе (${all.length})`, "all", "all")}
-        {tab("Кошики", "set", "all")}
-        {tab("Рослини", "pot", "all")}
+        {tab("Кошики", "set", "all", "package")}
+        {tab("Рослини", "pot", "all", "leaf")}
         {tab(`Опубліковано (${count("published")})`, "all", "published")}
         {tab(`Чернетки (${count("draft")})`, "all", "draft")}
         {tab(`Архів (${count("archived")})`, "all", "archived")}
       </nav>
 
-      {sp.import && <p role="status" className="rounded-lg bg-soft p-3 text-sm font-semibold">{sp.import}</p>}
+      {sp.import && <Alert tone="info">{sp.import}</Alert>}
 
-      <section className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-line text-muted">
-            <tr><th className="p-3">Товар</th><th>Склад</th><th>Ціна, ₴</th><th>Готових до продажу</th><th>Статус</th><th /></tr>
-          </thead>
-          <tbody>
-            {rows.map((p) => {
-              const st = (p.status ?? "published") as keyof typeof STATUS_UK;
-              const next = st === "published" ? { to: "draft", label: "Сховати" } : { to: "published", label: st === "archived" ? "Відновити" : "Опублікувати" };
-              const n = ready(p.slug, p.kind);
-              return (
-                <tr key={p.slug} className="border-b border-line align-top last:border-0">
-                  <td className="p-3">
-                    <Link href={`/admin/catalog/${p.slug}`} className="font-semibold text-ink">{productTitle(p, "uk")}</Link>
-                    <div className="text-xs text-muted">{p.kind === "set" ? "кошик" : "рослина"} · {p.slug}{edited.has(p.slug) ? " · змінено" : ""}</div>
-                  </td>
-                  <td className="py-3 pr-3 text-muted">{p.herbs.map((h) => getHerb(h)?.names.uk ?? h).join(", ")}</td>
-                  <td className="py-3 pr-3">
-                    <form action={setPrice} className="flex items-center gap-1">
-                      <input type="hidden" name="slug" value={p.slug} />
-                      <input name="price" type="number" min={0} defaultValue={p.priceUah} className="input w-24 !min-h-9 !py-1" aria-label={`Ціна: ${productTitle(p, "uk")}`} />
-                      <button className="chip !min-h-9" type="submit">ок</button>
-                    </form>
-                  </td>
-                  <td className="py-3 pr-3"><span className={n === 0 && st === "published" ? "font-semibold text-clay" : ""}>{n}</span></td>
-                  <td className="py-3 pr-3"><span className="badge">{STATUS_UK[st]}</span></td>
-                  <td className="py-3 pr-3">
-                    <div className="flex flex-wrap gap-1">
-                      <form action={setStatus}><input type="hidden" name="slug" value={p.slug} /><input type="hidden" name="status" value={next.to} /><button className="chip !min-h-9" type="submit">{next.label}</button></form>
-                      <Link href={`/admin/catalog/${p.slug}`} className="chip !min-h-9">Редагувати</Link>
-                      {st === "published" && <a href={`/uk/shop/${p.slug}`} className="chip !min-h-9" target="_blank" rel="noopener noreferrer">↗</a>}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted">Нічого не знайдено</td></tr>}
-          </tbody>
-        </table>
-      </section>
+      <DataTable
+        caption="Каталог"
+        columns={[
+          { key: "title", label: "Товар" }, { key: "herbs", label: "Склад" }, { key: "price", label: "Ціна, ₴" },
+          { key: "ready", label: "Готових до продажу" }, { key: "status", label: "Статус" }, { key: "actions", label: "" },
+        ]}
+        rows={rows.map((p) => {
+          const st = (p.status ?? "published") as keyof typeof STATUS_UK;
+          const next = st === "published" ? { to: "draft", label: "Сховати" } : { to: "published", label: st === "archived" ? "Відновити" : "Опублікувати" };
+          const n = ready(p.slug, p.kind);
+          return {
+            title: (
+              <div>
+                <Link href={`/admin/catalog/${p.slug}`} className="font-semibold">{productTitle(p, "uk")}</Link>
+                <div className="caption sh-muted">{p.kind === "set" ? "кошик" : "рослина"} · {p.slug}{edited.has(p.slug) ? " · змінено" : ""}</div>
+              </div>
+            ),
+            herbs: p.herbs.map((h) => getHerb(h)?.names.uk ?? h).join(", "),
+            price: (
+              <form action={setPrice} className="flex items-center gap-1">
+                <input type="hidden" name="slug" value={p.slug} />
+                <div style={{ width: 96 }}><Input name="price" type="number" min={0} defaultValue={p.priceUah} aria-label={`Ціна: ${productTitle(p, "uk")}`} /></div>
+                <Button size="sm" variant="secondary" type="submit">ок</Button>
+              </form>
+            ),
+            ready: <span className={n === 0 && st === "published" ? "label" : ""} style={n === 0 && st === "published" ? { color: "var(--danger)" } : undefined}>{n}</span>,
+            status: <StatusBadge kind="catalog" status={st} label={STATUS_UK[st]} />,
+            actions: (
+              <div className="flex flex-wrap gap-1">
+                <form action={setStatus}><input type="hidden" name="slug" value={p.slug} /><input type="hidden" name="status" value={next.to} /><Button size="sm" variant="secondary" type="submit">{next.label}</Button></form>
+                <Button size="sm" variant="ghost" href={`/admin/catalog/${p.slug}`}>Редагувати</Button>
+                {st === "published" && <Button size="sm" variant="ghost" href={`/uk/shop/${p.slug}`} target="_blank" rel="noopener noreferrer" ariaLabel="Відкрити на сайті" icon="arrow-up-right"> </Button>}
+              </div>
+            ),
+          };
+        })}
+      />
 
-      <section className="card p-5">
-        <h2 className="mb-1 text-xl font-bold">Таблиця (CSV)</h2>
-        <p className="mb-3 text-sm text-muted">Завантажте весь каталог, відредагуйте в Excel чи Google Таблицях і завантажте назад. Існуючі товари оновляться за ідентифікатором, нові з'являться як чернетки або з вказаним статусом.</p>
+      <Panel title="Таблиця (CSV)" lead="Завантажте весь каталог, відредагуйте в Excel чи Google Таблицях і завантажте назад. Існуючі товари оновляться за ідентифікатором, нові з'являться як чернетки або з вказаним статусом.">
         <div className="flex flex-wrap items-center gap-3">
-          <a href="/admin/catalog/export" className="btn btn-ghost" download>⬇ Завантажити CSV</a>
+          <Button variant="secondary" href="/admin/catalog/export" icon="download" download>Завантажити CSV</Button>
           <form action={importCsv} className="flex flex-wrap items-center gap-2">
-            <input type="file" name="file" accept=".csv,text/csv" required className="text-sm" aria-label="CSV-файл" />
-            <button className="btn btn-primary" type="submit">⬆ Імпортувати</button>
+            <input type="file" name="file" accept=".csv,text/csv" required className="body-sm" aria-label="CSV-файл" />
+            <Button variant="primary" type="submit" icon="plus">Імпортувати</Button>
           </form>
         </div>
-      </section>
+      </Panel>
     </div>
   );
 }

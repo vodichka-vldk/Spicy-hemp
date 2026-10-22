@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Alert, Badge, Button, Input, Rating, Timeline } from "@/ds";
+import { Facts, PageHeader, Panel, StatusBadge } from "@/ui";
 import { notFound } from "next/navigation";
 import { loadProducts } from "@/lib/catalog-server";
 import { getHerb } from "@/lib/content";
@@ -32,70 +34,72 @@ export default async function PotCard({ params }: { params: Promise<{ code: stri
   const upcoming = reminders.filter((r) => r.status === "pending" || r.status === "snoozed" || r.status === "sent").sort((a, b) => a.dueAt.localeCompare(b.dueAt));
   const next = ITEM_TRANSITIONS[item.status];
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/admin/pots" className="text-sm text-muted">← Горщики й QR</Link>
-        <h1 className="text-3xl font-bold">{displayId(item.kind, item.displayNo, "uk")}{item.ownerName ? ` «${item.ownerName}»` : ""}</h1>
-        <span className="badge">{statusUk(item.status)}</span>
-      </div>
+    <div className="sh-stack-lg">
+      <PageHeader
+        back={{ href: "/admin/pots", label: "Горщики й QR" }}
+        title={`${displayId(item.kind, item.displayNo, "uk")}${item.ownerName ? ` «${item.ownerName}»` : ""}`}
+        actions={<StatusBadge kind="item" status={item.status} label={statusUk(item.status)} />}
+      />
 
-      <section className="card grid gap-3 p-5 text-sm sm:grid-cols-2">
-        <p><span className="text-muted">Товар:</span> {product ? <Link href={`/admin/catalog/${product.slug}`}>{productTitle(product, "uk")}</Link> : item.product || "—"}</p>
-        <p><span className="text-muted">Склад:</span> {item.species.map((s) => getHerb(s)?.names.uk ?? s).join(", ")}</p>
-        <p><span className="text-muted">Код:</span> <span className="font-mono">{formatCode(code)}</span> · <a href={`/p/${code}`} className="text-leaf underline">/p/{code}</a></p>
-        <p><span className="text-muted">Партія:</span> {item.batch} · готовий {item.readyOn}</p>
-        <p><span className="text-muted">Замовлення:</span> {item.orderId ? <Link href={`/admin/orders/${item.orderId}`} className="font-mono">{item.orderId}</Link> : "—"}</p>
-        <p><span className="text-muted">Власник:</span> {owner ? `${owner.firstName ?? "—"}${owner.username ? ` @${owner.username}` : ""}, активовано ${when(item.activatedAt)}` : "ще не активовано"}</p>
-      </section>
+      <Panel>
+        <Facts items={[
+          { label: "Товар", value: product ? <Link href={`/admin/catalog/${product.slug}`}>{productTitle(product, "uk")}</Link> : item.product || "—" },
+          { label: "Склад", value: item.species.map((s) => getHerb(s)?.names.uk ?? s).join(", ") },
+          { label: "Код", value: <><span className="font-mono">{formatCode(code)}</span> · <a href={`/p/${code}`} className="underline">/p/{code}</a></> },
+          { label: "Партія", value: `${item.batch} · готовий ${item.readyOn}` },
+          { label: "Замовлення", value: item.orderId ? <Link href={`/admin/orders/${item.orderId}`} className="font-mono">{item.orderId}</Link> : "—" },
+          { label: "Власник", value: owner ? `${owner.firstName ?? "—"}${owner.username ? ` @${owner.username}` : ""}, активовано ${when(item.activatedAt)}` : "ще не активовано" },
+        ]} />
+      </Panel>
 
-      <section className="card p-5">
-        <h2 className="mb-2 text-xl font-bold">Статус і повернення</h2>
-        {next.length === 0 ? <p className="text-sm text-muted">З цього статусу переходів немає.</p> : (
-          <form action={setItemStatus} className="space-y-2">
+      <Panel title="Статус і повернення" lead="«На складі» знімає власника й замовлення з горщика: так робимо після повернення, коли рослина придатна для продажу.">
+        {next.length === 0 ? <p className="sh-muted">З цього статусу переходів немає.</p> : (
+          <form action={setItemStatus} className="sh-stack">
             <input type="hidden" name="code" value={code} />
-            <textarea name="note" rows={2} className="input" maxLength={500} placeholder="Причина, наприклад «повернення: рослина не прижилась»" aria-label="Причина" defaultValue={note ?? ""} />
+            <Input multiline rows={2} name="note" maxLength={500} placeholder="Причина, наприклад «повернення: рослина не прижилась»" aria-label="Причина" defaultValue={note ?? ""} />
             <div className="flex flex-wrap gap-2">
-              {next.map((to) => (<button key={to} name="to" value={to} className="btn btn-ghost" type="submit">→ {statusUk(to)}</button>))}
+              {next.map((to) => (<Button key={to} name="to" value={to} type="submit" variant="secondary" iconRight="arrow-right">{statusUk(to)}</Button>))}
             </div>
-            <p className="text-xs text-muted">«На складі» знімає власника й замовлення з горщика: так робимо після повернення, коли рослина придатна для продажу.</p>
           </form>
         )}
-        <form action={saveItemNote} className="mt-3 flex gap-2">
+        <form action={saveItemNote} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="code" value={code} />
-          <input name="note" className="input" defaultValue={note ?? ""} maxLength={500} placeholder="Нотатка про горщик" aria-label="Нотатка" />
-          <button className="btn btn-ghost" type="submit">Зберегти</button>
+          <div style={{ flex: "1 1 16rem" }}><Input name="note" defaultValue={note ?? ""} maxLength={500} placeholder="Нотатка про горщик" aria-label="Нотатка" /></div>
+          <Button type="submit" variant="secondary">Зберегти</Button>
         </form>
-      </section>
+      </Panel>
 
-      <section className="card p-5">
-        <h2 className="mb-2 text-xl font-bold">Питання власника ({questions.length})</h2>
-        {questions.length === 0 ? <p className="text-sm text-muted">Питань не було.</p> : (
-          <ul className="space-y-2 text-sm">{questions.map((q) => (
-            <li key={q.id} className="rounded-lg bg-soft p-3">
-              <p className="text-muted">{when(q.createdAt)}{q.symptom ? ` · ${hintFor(q.symptom, "uk")?.symptom}` : ""}</p>
+      <Panel title={`Питання власника (${questions.length})`}>
+        {questions.length === 0 ? <p className="sh-muted">Питань не було.</p> : (
+          <ul className="sh-stack body-sm">{questions.map((q) => (
+            <li key={q.id} className="sh-stack" style={{ gap: 4 }}>
+              <p className="sh-muted">{when(q.createdAt)}{q.symptom ? ` · ${hintFor(q.symptom, "uk")?.symptom}` : ""}</p>
               <p>{q.body}</p>
-              {q.answer ? <p className="mt-1 font-semibold text-leaf">Відповідь: {q.answer}</p> : <Link href="/admin/questions" className="text-clay underline">Чекає відповіді →</Link>}
+              {q.answer ? <p><b>Відповідь:</b> {q.answer}</p> : <Link href="/admin/questions"><Badge tone="warning">Чекає відповіді</Badge></Link>}
             </li>))}</ul>
         )}
-      </section>
+      </Panel>
 
-      <section className="card p-5">
-        <h2 className="mb-2 text-xl font-bold">Відгук</h2>
-        {review ? <p className="text-sm"><span className="text-amber-600">{"★".repeat(review.rating)}</span> · {review.status === "approved" ? "схвалено" : review.status === "rejected" ? "відхилено" : "на модерації"} · {review.consentPublic ? "згода є" : "без згоди на публікацію"}{review.body ? ` · «${review.body}»` : ""} <Link href="/admin/reviews" className="text-leaf underline">до відгуків →</Link></p> : <p className="text-sm text-muted">Оцінки ще немає.</p>}
-      </section>
+      <Panel title="Відгук">
+        {review ? (
+          <div className="sh-stack body-sm">
+            <div className="flex flex-wrap items-center gap-2"><Rating value={review.rating} /><StatusBadge kind="review" status={review.status} label={review.status === "approved" ? "схвалено" : review.status === "rejected" ? "відхилено" : "на модерації"} /><span className="sh-muted">{review.consentPublic ? "згода є" : "без згоди на публікацію"}</span></div>
+            {review.body && <p>«{review.body}»</p>}
+            <div><Button size="sm" variant="secondary" href="/admin/reviews">До відгуків</Button></div>
+          </div>
+        ) : <p className="sh-muted">Оцінки ще немає.</p>}
+      </Panel>
 
-      <section className="card p-5">
-        <h2 className="mb-2 text-xl font-bold">Заплановані нагадування</h2>
-        {upcoming.length === 0 ? <p className="text-sm text-muted">Нагадувань немає (з'являться після активації).</p> : (
-          <ul className="grid gap-1 text-sm sm:grid-cols-2">{upcoming.map((r) => (
-            <li key={r.id}>{when(r.dueAt)} · {TASK_UK[r.task] ?? r.task}{r.species ? ` (${getHerb(r.species)?.names.uk ?? r.species})` : ""}{r.status === "sent" ? " · надіслано" : r.status === "snoozed" ? " · відкладено" : ""}</li>))}</ul>
+      <Panel title="Заплановані нагадування">
+        {upcoming.length === 0 ? <p className="sh-muted">Нагадувань немає (з'являться після активації).</p> : (
+          <Timeline events={upcoming.map((r) => ({
+            title: `${TASK_UK[r.task] ?? r.task}${r.species ? ` (${getHerb(r.species)?.names.uk ?? r.species})` : ""}`,
+            time: `${when(r.dueAt)}${r.status === "sent" ? " · надіслано" : r.status === "snoozed" ? " · відкладено" : ""}`,
+          }))} />
         )}
-      </section>
+      </Panel>
 
-      <section className="card p-5 text-sm text-muted">
-        <h2 className="mb-1 text-xl font-bold text-ink">Журнал догляду</h2>
-        Записи журналу й фото з'являться, коли буде зроблено журнал у Mini App (етап 5.3). Тоді тут з'являться записи, фільтр «проблеми» і фото для претензій.
-      </section>
+      <Alert tone="info" title="Журнал догляду">Записи журналу й фото з'являться, коли буде зроблено журнал у Mini App (етап 5.3). Тоді тут з'являться записи, фільтр «проблеми» і фото для претензій.</Alert>
     </div>
   );
 }

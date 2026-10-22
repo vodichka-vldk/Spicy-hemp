@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Accordion, toneAt } from "@/components/HerbParts";
-import { Button, Grid, PlantCard } from "@/ds";
+import { Badge, Button, Grid, PlantCard } from "@/ds";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { GardenArt, gardenRatio } from "@/components/GardenArt";
 import { PotArt } from "@/components/PotArt";
@@ -41,18 +41,18 @@ export default async function GardenCard({ params }: P) {
 
   return (
     <div className="container-x max-w-xl py-6">
-      <figure className="card overflow-hidden">
+      <figure className="sh-surface overflow-hidden" style={{ padding: 0 }}>
         <div style={{ aspectRatio: ratio }}>
           <PhotoLightbox open={t(locale, "garden_photo_open")} close={t(locale, "garden_photo_close")} ratio={ratio}>{art}</PhotoLightbox>
         </div>
-        <figcaption className="py-3 text-center font-display text-sm tracking-[0.3em] text-muted">{displayId(item.kind, item.displayNo, locale)}</figcaption>
+        <figcaption className="overline sh-muted py-3 text-center" style={{ letterSpacing: "0.3em" }}>{displayId(item.kind, item.displayNo, locale)}</figcaption>
       </figure>
 
       <header className="mt-5">
-        <p className="text-xs uppercase tracking-widest text-muted">{t(locale, "garden_id")}: {String(item.displayNo).padStart(3, "0")}</p>
+        <p className="overline sh-muted">{t(locale, "garden_id")}: {String(item.displayNo).padStart(3, "0")}</p>
         <h1 className="plant-name mt-1">{title}</h1>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
-          <span className="badge">{t(locale, `item_status_${item.status}` as DictKey)}</span>
+          <Badge tone="leaf">{t(locale, `item_status_${item.status}` as DictKey)}</Badge>
           <span>{t(locale, "garden_made", { date: made })}</span>
         </p>
       </header>

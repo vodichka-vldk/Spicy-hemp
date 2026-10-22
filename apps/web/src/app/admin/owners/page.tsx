@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Badge, Button, DataTable, Input } from "@/ds";
 import { displayId } from "@/lib/domain";
 import { store } from "@/lib/store";
+import { PageHeader } from "@/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -19,27 +21,26 @@ export default async function Owners({ searchParams }: { searchParams: Promise<{
     }))
     .sort((a, b) => b.pots.length - a.pots.length || b.o.createdAt.localeCompare(a.o.createdAt));
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Власники</h1>
-      <form className="flex gap-2" role="search"><input name="q" defaultValue={q} className="input max-w-xs" placeholder="Ім'я, @нік або id" aria-label="Пошук" /><button className="btn btn-ghost" type="submit">Знайти</button></form>
-      <section className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-line text-muted"><tr><th className="p-3">Власник</th><th>Горщики</th><th>Питання без відповіді</th><th>Оцінок</th><th>Сповіщення</th><th>З нами з</th></tr></thead>
-          <tbody>
-            {rows.map(({ o, pots, open, rated }) => (
-              <tr key={o.id} className="border-b border-line align-top last:border-0">
-                <td className="p-3"><b>{o.firstName ?? "—"}</b>{o.username && <span className="text-muted"> @{o.username}</span>}<div className="font-mono text-xs text-muted">{o.telegramId}</div></td>
-                <td className="py-3 pr-3">{pots.length === 0 ? <span className="text-muted">—</span> : pots.map((p) => (<Link key={p.code} href={`/admin/pots/${p.code}`} className="mr-2 inline-block">{displayId(p.kind, p.displayNo, "uk")}{p.ownerName ? ` «${p.ownerName}»` : ""}</Link>))}</td>
-                <td className="py-3 pr-3">{open > 0 ? <Link href="/admin/questions" className="font-semibold text-clay">{open}</Link> : 0}</td>
-                <td className="py-3 pr-3">{rated}</td>
-                <td className="py-3 pr-3">{o.notify ? "так" : "вимкнені"}</td>
-                <td className="py-3 pr-3">{o.createdAt.slice(0, 10)}</td>
-              </tr>
-            ))}
-            {rows.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted">Поки нікого. Власники з'являються, коли пишуть боту.</td></tr>}
-          </tbody>
-        </table>
-      </section>
+    <div className="sh-stack-lg">
+      <PageHeader title="Власники" />
+      <form className="flex flex-wrap items-end gap-2" role="search">
+        <div style={{ flex: "1 1 16rem" }}><Input name="q" defaultValue={q} icon="search" placeholder="Ім'я, @нік або id" aria-label="Пошук" /></div>
+        <Button variant="secondary" type="submit">Знайти</Button>
+      </form>
+      <DataTable
+        caption="Власники"
+        columns={[
+          { key: "who", label: "Власник" }, { key: "pots", label: "Горщики" }, { key: "open", label: "Питання без відповіді" },
+          { key: "rated", label: "Оцінок" }, { key: "notify", label: "Сповіщення" }, { key: "since", label: "З нами з" },
+        ]}
+        rows={rows.map(({ o, pots, open, rated }) => ({
+          who: <div><b>{o.firstName ?? "—"}</b>{o.username && <span className="sh-muted"> @{o.username}</span>}<div className="caption sh-muted font-mono">{o.telegramId}</div></div>,
+          pots: pots.length === 0 ? "—" : pots.map((p) => (<Link key={p.code} href={`/admin/pots/${p.code}`} className="mr-2 inline-block">{displayId(p.kind, p.displayNo, "uk")}{p.ownerName ? ` «${p.ownerName}»` : ""}</Link>)),
+          open: open > 0 ? <Link href="/admin/questions"><Badge tone="warning">{open}</Badge></Link> : "0",
+          rated, notify: o.notify ? "так" : "вимкнені", since: o.createdAt.slice(0, 10),
+        }))}
+      />
+      {rows.length === 0 && <p className="sh-muted">Поки нікого. Власники з'являються, коли пишуть боту.</p>}
     </div>
   );
 }

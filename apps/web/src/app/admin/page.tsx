@@ -1,17 +1,17 @@
 import Link from "next/link";
+import { Alert, Badge, Button, EmptyState, Grid, StatTile } from "@/ds";
 import { ORDER_TABS, inTab, nextAction } from "@/lib/order-groups";
 import { store } from "@/lib/store";
+import { PageHeader, Panel } from "@/ui";
 
 export const dynamic = "force-dynamic";
 
 const LOW_STOCK = 3;
 
-function Card({ href, n, title, hint, tone }: { href: string; n: number; title: string; hint: string; tone?: "warn" }) {
+function Tile({ href, n, title, icon, warn }: { href: string; n: number; title: string; icon: string; warn?: boolean }) {
   return (
-    <Link href={href} className={`card block p-4 no-underline hover:shadow-md ${tone === "warn" && n > 0 ? "border-clay" : ""}`}>
-      <p className={`text-4xl font-bold ${n > 0 && tone === "warn" ? "text-clay" : "text-leaf"}`}>{n}</p>
-      <p className="mt-1 font-semibold text-ink">{title}</p>
-      <p className="text-sm text-muted">{hint}</p>
+    <Link href={href} className="no-underline">
+      <StatTile label={title} value={String(n)} icon={icon} delta={warn && n > 0 ? "потрібна дія" : undefined} deltaTone="warning" />
     </Link>
   );
 }
@@ -28,37 +28,40 @@ export default async function Today() {
   for (const i of items) if (i.status === "ready_for_sale" && !i.orderId) stock.set(i.product, (stock.get(i.product) ?? 0) + 1);
   const low = [...stock].filter(([, n]) => n <= LOW_STOCK);
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Сьогодні</h1>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Card href="/admin/orders?tab=todo" n={todo.length} title="Замовлення до дії" hint="підтвердити, зібрати, відправити" tone="warn" />
-        <Card href="/admin/orders?tab=todo" n={toShip.length} title="До відправки" hint="оплачені й підтверджені" />
-        <Card href="/admin/orders?tab=unpaid" n={unpaid.length} title="Чекають оплату" hint="нагадайте клієнтам" />
-        <Card href="/admin/questions" n={openQuestions.length} title="Питання без відповіді" hint="відповісти власнику" tone="warn" />
-        <Card href="/admin/reviews" n={reviews.length} title="Відгуки на модерації" hint="схвалити або відхилити" tone="warn" />
-      </div>
+    <div className="sh-stack-lg">
+      <PageHeader title="Сьогодні" />
+      <Grid cols="stats">
+        <Tile href="/admin/orders?tab=todo" n={todo.length} title="Замовлення до дії" icon="clipboard-list" warn />
+        <Tile href="/admin/orders?tab=todo" n={toShip.length} title="До відправки" icon="truck" />
+        <Tile href="/admin/orders?tab=unpaid" n={unpaid.length} title="Чекають оплату" icon="credit-card" />
+        <Tile href="/admin/questions" n={openQuestions.length} title="Питання без відповіді" icon="info" warn />
+        <Tile href="/admin/reviews" n={reviews.length} title="Відгуки на модерації" icon="star" warn />
+      </Grid>
 
-      <section className="card p-5">
-        <h2 className="mb-3 text-xl font-bold">Що робити зараз</h2>
-        {todo.length === 0 && returns.length === 0 ? <p className="text-muted">Усе опрацьовано. </p> : (
-          <ul className="divide-y divide-line">
+      <Panel title="Що робити зараз">
+        {todo.length === 0 && returns.length === 0 ? <EmptyState icon="circle-check" title="Усе опрацьовано" /> : (
+          <ul className="sh-stack">
             {todo.slice(0, 8).map((o) => (
-              <li key={o.id}><Link href={`/admin/orders/${o.id}`} className="flex flex-wrap gap-x-3 py-2 no-underline"><span className="font-mono font-semibold text-ink">{o.id}</span><span className="text-ink">{o.customer.name}</span><span className="ml-auto text-leaf">→ {nextAction(o)}</span></Link></li>
+              <li key={o.id}>
+                <Link href={`/admin/orders/${o.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 no-underline">
+                  <span className="font-mono font-semibold">{o.id}</span><span>{o.customer.name}</span>
+                  <span className="ml-auto"><Badge tone="info" icon="arrow-right">{nextAction(o)}</Badge></span>
+                </Link>
+              </li>
             ))}
           </ul>
         )}
-        {todo.length > 8 && <p className="mt-2 text-sm"><Link href="/admin/orders?tab=todo" className="text-leaf">Усі {todo.length} →</Link></p>}
-      </section>
+        {todo.length > 8 && <Button variant="ghost" href="/admin/orders?tab=todo" iconRight="arrow-right">Усі {todo.length}</Button>}
+      </Panel>
 
       {low.length > 0 && (
-        <section className="card border-clay p-5">
-          <h2 className="mb-2 text-xl font-bold">Закінчуються горщики</h2>
-          <ul className="flex flex-wrap gap-2">{low.map(([p, n]) => (<li key={p} className="badge font-mono">{p}: {n}</li>))}</ul>
-          <p className="mt-3"><Link href="/admin/pots" className="btn btn-clay">Створити партію</Link></p>
-        </section>
+        <Alert tone="warning" title="Закінчуються горщики">
+          <ul className="my-2 flex flex-wrap gap-2">{low.map(([p, n]) => (<li key={p}><Badge tone="warning">{p}: {n}</Badge></li>))}</ul>
+          <Button size="sm" variant="accent" href="/admin/pots">Створити партію</Button>
+        </Alert>
       )}
 
-      <p className="text-sm text-muted">{ORDER_TABS.find((t) => t.key === "closed")?.label}: {orders.filter((o) => inTab(o, "closed")).length} · Аналітику сканів дивіться в розділі «Аналітика».</p>
+      <p className="body-sm sh-muted">{ORDER_TABS.find((t) => t.key === "closed")?.label}: {orders.filter((o) => inTab(o, "closed")).length} · Аналітику сканів дивіться в розділі «Аналітика».</p>
     </div>
   );
 }

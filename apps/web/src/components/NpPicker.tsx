@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Combobox, Input, Select } from "@/ds";
 import { dict } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 
@@ -16,6 +17,8 @@ export function NpPicker({ locale, errors }: { locale: Locale; errors: Errors })
   const [mode, setMode] = useState<"probing" | "api" | "manual">("probing");
   const [cities, setCities] = useState<City[]>([]);
   const [cityRef, setCityRef] = useState("");
+  const [cityText, setCityText] = useState("");
+  const [listOpen, setListOpen] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [branchRef, setBranchRef] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -40,34 +43,43 @@ export function NpPicker({ locale, errors }: { locale: Locale; errors: Errors })
     }, 250);
   }
 
-  const err = (name: string) => (errors[name] ? <p id={`e-${name}`} className="err" role="alert">{dict.required[locale]}</p> : null);
+  const need = (name: string) => (errors[name] ? dict.required[locale] : undefined);
 
   if (mode !== "api") {
     return (
       <>
-        <label className="field"><span>{dict.city[locale]} *</span><input id="f-city" name="city" autoComplete="address-level2" className="input" aria-invalid={errors.city ? true : undefined} />{err("city")}</label>
-        <label className="field"><span>{dict.np_branch[locale]} *</span><input id="f-address" name="address" autoComplete="street-address" className="input" aria-invalid={errors.address ? true : undefined} />{err("address")}</label>
+        <Input id="f-city" name="city" label={`${dict.city[locale]} *`} autoComplete="address-level2" error={need("city")} />
+        <Input id="f-address" name="address" label={`${dict.np_branch[locale]} *`} autoComplete="street-address" error={need("address")} />
       </>
     );
   }
   const branchName = warehouses.find((w) => w.ref === branchRef)?.name ?? "";
   return (
     <>
-      <label className="field">
-        <span>{dict.city[locale]} *</span>
-        <input id="f-city" name="city" list="np-cities" autoComplete="off" className="input" onChange={(e) => onCity(e.target.value)} aria-invalid={errors.city ? true : undefined} />
-        <datalist id="np-cities">{cities.map((c) => (<option key={c.ref} value={c.name}>{c.area}</option>))}</datalist>
-        {err("city")}
-      </label>
-      <label className="field">
-        <span>{dict.np_branch[locale]} *</span>
-        <select id="f-address" className="input" value={branchRef} disabled={!cityRef} onChange={(e) => setBranchRef(e.target.value)} aria-invalid={errors.address ? true : undefined}>
-          <option value="">{cityRef ? "—" : dict.city[locale]}</option>
-          {warehouses.map((w) => (<option key={w.ref} value={w.ref}>{w.name}</option>))}
-        </select>
-        <input type="hidden" name="address" value={branchName} />
-        {err("address")}
-      </label>
+      <Combobox
+        id="f-city"
+        label={`${dict.city[locale]} *`}
+        placeholder={dict.city[locale]}
+        value={cityText}
+        open={listOpen && cities.length > 0 && !cityRef}
+        options={cities.map((c) => ({ value: c.ref, label: c.name, hint: c.area }))}
+        selected={cityRef}
+        emptyText="—"
+        onChange={(e: { target: { value: string } }) => { setCityText(e.target.value); setListOpen(true); onCity(e.target.value); }}
+        onSelect={(o: { value: string; label: string }) => { setCityText(o.label); setListOpen(false); onCity(o.label); }}
+      />
+      <input type="hidden" name="city" value={cityText} />
+      {errors.city && <p className="body-sm is-error" role="alert">{dict.required[locale]}</p>}
+      <Select
+        id="f-address"
+        label={`${dict.np_branch[locale]} *`}
+        value={branchRef}
+        disabled={!cityRef}
+        options={[{ value: "", label: cityRef ? "—" : dict.city[locale] }, ...warehouses.map((w) => ({ value: w.ref, label: w.name }))]}
+        onChange={(e: { target: { value: string } }) => setBranchRef(e.target.value)}
+      />
+      <input type="hidden" name="address" value={branchName} />
+      {errors.address && <p className="body-sm is-error" role="alert">{dict.required[locale]}</p>}
       <input type="hidden" name="cityRef" value={cityRef} />
       <input type="hidden" name="warehouseRef" value={branchRef} />
     </>

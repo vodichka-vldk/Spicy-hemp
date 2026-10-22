@@ -43,7 +43,7 @@ function A(p) {
     var Tag = p.href ? A : 'button';
     var props = {
       className: cx('sh-btn label', 'v-' + (p.variant || 'primary'), 's-' + (p.size || 'md'), p.full && 'is-full', p.loading && 'is-loading', p.className),
-      href: p.href, onClick: p.onClick, disabled: p.disabled || p.loading, 'aria-busy': p.loading ? true : undefined
+      href: p.href, onClick: p.onClick, name: p.name, value: p.value, formAction: p.formAction, formNoValidate: p.formNoValidate, download: p.download, target: p.target, rel: p.rel, 'aria-label': p.ariaLabel, disabled: p.disabled || p.loading, 'aria-busy': p.loading ? true : undefined
     };
     if (!p.href) props.type = p.type || 'button';
     return h(Tag, props, p.icon ? h(Icon, { name: p.icon, size: 20 }) : null, h('span', null, p.children), p.iconRight ? h(Icon, { name: p.iconRight, size: 20 }) : null);
@@ -79,17 +79,17 @@ function A(p) {
   function Select(p) {
     var auto = useId(); var id = p.id || auto;
     return h('div', { className: 'sh-field' }, p.label ? h('label', { htmlFor: id, className: 'label sh-field-label' }, p.label) : null,
-      h('div', { className: 'sh-input-wrap sh-select' }, h('select', { id: id, className: 'sh-input body', value: p.value, defaultValue: p.defaultValue, onChange: p.onChange }, (p.options || []).map(function (o) { return h('option', { key: o.value, value: o.value }, o.label); })), h(Icon, { name: 'chevron-down', size: 20 })));
+      h('div', { className: 'sh-input-wrap sh-select' }, h('select', { id: id, name: p.name, required: p.required, disabled: p.disabled, 'aria-label': p.ariaLabel, className: 'sh-input body', value: p.value, defaultValue: p.defaultValue, onChange: p.onChange }, (p.options || []).map(function (o) { return h('option', { key: o.value, value: o.value }, o.label); })), h(Icon, { name: 'chevron-down', size: 20 })));
   }
   function Checkbox(p) {
-    return h('label', { className: cx('sh-check body', p.className) }, h('input', { type: 'checkbox', checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange, disabled: p.disabled }), h('span', { className: 'sh-check-box' }, h(Icon, { name: 'check', size: 16, strokeWidth: 3 })), h('span', null, p.children));
+    return h('label', { className: cx('sh-check body', p.className) }, h('input', { type: 'checkbox', id: p.id, name: p.name, value: p.value, checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange, disabled: p.disabled, required: p.required }), h('span', { className: 'sh-check-box' }, h(Icon, { name: 'check', size: 16, strokeWidth: 3 })), h('span', null, p.children));
   }
   function Switch(p) {
-    return h('label', { className: 'sh-switch body' }, h('span', null, p.children), h('input', { type: 'checkbox', role: 'switch', checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange }), h('span', { className: 'sh-switch-track', 'aria-hidden': true }, h('span', { className: 'sh-switch-thumb' })));
+    return h('label', { className: 'sh-switch body' }, h('span', null, p.children), h('input', { type: 'checkbox', role: 'switch', name: p.name, value: p.value, checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange }), h('span', { className: 'sh-switch-track', 'aria-hidden': true }, h('span', { className: 'sh-switch-thumb' })));
   }
   function RadioCard(p) {
     return h('label', { className: cx('sh-radiocard', p.checked && 'is-checked', p.className) },
-      h('input', { type: 'radio', name: p.name, value: p.value, checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange }),
+      h('input', { type: 'radio', name: p.name, value: p.value, required: p.required, checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange }),
       p.icon ? h('span', { className: 'sh-radiocard-icon' }, h(Icon, { name: p.icon, size: 22 })) : null,
       h('span', { className: 'sh-radiocard-text' }, h('span', { className: 'label' }, p.title), p.description ? h('span', { className: 'body-sm sh-muted' }, p.description) : null),
       p.right ? h('span', { className: 'label sh-radiocard-right' }, p.right) : null, h('span', { className: 'sh-radiocard-dot', 'aria-hidden': true }));

@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Accordion, Alert, Badge, Button, Checkbox, Grid, Input, Select } from "@/ds";
+import { Flash, PageHeader, Panel } from "@/ui";
 import { cardSections, sectionTitles } from "@/lib/card";
 import { loadProducts } from "@/lib/catalog-server";
 import { getHerbs } from "@/lib/content";
@@ -29,33 +30,33 @@ export default async function Editor({ params, searchParams }: { params: Promise
   const defaultsEn = product ? cardSections(slug, "en", {}, base) : [];
   const auto = kind === "set" && chosen.size ? autoSetPrice([...chosen]) : base?.priceUah ?? 0;
   const title = product ? productTitle(product, "uk") : "Новий кошик";
-  const field = "field";
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/admin/catalog" className="text-sm text-muted">← Каталог</Link>
-        <h1 className="text-3xl font-bold">{title}</h1>
-        {!isNew && <Link href={`/admin/catalog/${slug}/preview`} className="chip ml-auto">Перегляд</Link>}
-        {product?.status === "published" && <a href={`/uk/shop/${slug}`} className="chip ml-auto" target="_blank" rel="noopener noreferrer">Відкрити на сайті ↗</a>}
-      </div>
-      {sp.saved && <p role="status" className="rounded-lg bg-soft p-3 text-sm font-semibold">✓ Збережено</p>}
-      {sp.error && <p role="alert" className="rounded-lg bg-soft p-3 text-sm font-semibold text-clay">{sp.error}</p>}
+    <div className="sh-stack-lg">
+      <PageHeader
+        back={{ href: "/admin/catalog", label: "Каталог" }}
+        title={title}
+        actions={
+          <>
+            {!isNew && <Button variant="secondary" icon="search" href={`/admin/catalog/${slug}/preview`}>Перегляд</Button>}
+            {product?.status === "published" && <Button variant="ghost" iconRight="arrow-up-right" href={`/uk/shop/${slug}`} target="_blank" rel="noopener noreferrer">Відкрити на сайті</Button>}
+          </>
+        }
+      />
+      <Flash saved={sp.saved} error={sp.error} />
 
       {!isNew && (
-        <section className="card p-5">
-          <h2 className="text-xl font-bold">Фото</h2>
-          <p className="mb-3 text-sm text-muted">JPEG, PNG або WebP до 5 МБ, до 8 фото. Перше фото стає обкладинкою (на картці й на сторінці товару). Без фото показується ілюстрація.</p>
+        <Panel title="Фото" lead="JPEG, PNG або WebP до 5 МБ, до 8 фото. Перше фото стає обкладинкою (на картці й на сторінці товару). Без фото показується ілюстрація.">
           {(entry?.photos?.length ?? 0) > 0 && (
-            <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {entry!.photos!.map((ph, n) => (
-                <li key={ph} className="card overflow-hidden">
+                <li key={ph} className="sh-surface sh-stack" style={{ padding: 8 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoUrl(ph)} alt={`Фото ${n + 1}`} className="aspect-square w-full object-cover" />
-                  <div className="flex gap-1 p-2">
-                    {n === 0 ? <span className="badge">Обкладинка</span> : (
-                      <form action={changePhoto}><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="cover" /><button className="chip !min-h-8" type="submit">Зробити обкладинкою</button></form>
+                  <img src={photoUrl(ph)} alt={`Фото ${n + 1}`} className="aspect-square w-full rounded-xl object-cover" />
+                  <div className="flex flex-wrap items-center gap-1">
+                    {n === 0 ? <Badge tone="leaf">Обкладинка</Badge> : (
+                      <form action={changePhoto}><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="cover" /><Button size="sm" variant="secondary" type="submit">Зробити обкладинкою</Button></form>
                     )}
-                    <form action={changePhoto} className="ml-auto"><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="delete" /><button className="chip !min-h-8" type="submit" aria-label={`Видалити фото ${n + 1}`}></button></form>
+                    <form action={changePhoto} className="ml-auto"><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="delete" /><Button size="sm" variant="ghost" type="submit" icon="trash-2" ariaLabel={`Видалити фото ${n + 1}`}> </Button></form>
                   </div>
                 </li>
               ))}
@@ -63,88 +64,75 @@ export default async function Editor({ params, searchParams }: { params: Promise
           )}
           <form action={uploadPhotos} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="slug" value={slug} />
-            <input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required className="text-sm" aria-label="Файли фото" />
-            <button className="btn btn-primary" type="submit">Додати фото</button>
+            <input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required className="body-sm" aria-label="Файли фото" />
+            <Button variant="primary" type="submit" icon="plus">Додати фото</Button>
           </form>
-        </section>
+        </Panel>
       )}
 
-      <form action={saveProduct} className="space-y-6">
+      <form action={saveProduct} className="sh-stack-lg">
         <input type="hidden" name="original" value={isNew ? "" : slug} />
         <input type="hidden" name="kind" value={kind} />
 
-        <section className="card grid gap-4 p-5 sm:grid-cols-2">
-          <h2 className="text-xl font-bold sm:col-span-2">Основне</h2>
-          <label className={field}><span>Назва (укр)</span><input name="title_uk" defaultValue={entry?.title?.uk ?? ""} placeholder={product ? productTitle(base ?? product, "uk") : "Набір «Ранковий»"} className="input" /></label>
-          <label className={field}><span>Назва (eng)</span><input name="title_en" defaultValue={entry?.title?.en ?? ""} placeholder={product ? productTitle(base ?? product, "en") : "“Morning” set"} className="input" /></label>
-          <label className={field}><span>Короткий опис (укр)</span><input name="tagline_uk" defaultValue={entry?.tagline?.uk ?? ""} placeholder={base?.blurb?.uk ?? ""} className="input" /></label>
-          <label className={field}><span>Короткий опис (eng)</span><input name="tagline_en" defaultValue={entry?.tagline?.en ?? ""} placeholder={base?.blurb?.en ?? ""} className="input" /></label>
-          <label className={field}><span>Ціна, ₴</span>
-            <input name="price" type="number" min={0} defaultValue={entry?.priceUah || ""} placeholder={`авто: ${auto}`} className="input" />
-            <small className="text-muted">Порожньо = розрахунок за складом{kind === "set" ? " зі знижкою на набір" : ""}.</small>
-          </label>
-          <label className={field}><span>Наявність</span>
-            <select name="stock_mode" defaultValue={entry?.stockMode ?? product?.stockMode ?? "in_stock"} className="input">
-              <option value="in_stock">В наявності</option><option value="made_to_order">На замовлення</option>
-            </select>
-          </label>
-          <label className={field}><span>Статус</span>
-            <select name="status" defaultValue={product?.status ?? "draft"} className="input">
-              <option value="published">Опубліковано</option><option value="draft">Чернетка (не видно на сайті)</option><option value="archived">В архіві</option>
-            </select>
-          </label>
-          {isNew && <label className={field}><span>Ідентифікатор (необов'язково)</span><input name="slug" className="input" placeholder="set-morning" pattern="[a-z0-9]+(-[a-z0-9]+)*" /><small className="text-muted">Латиниця; якщо порожньо, зробимо з назви. Потім не змінюється.</small></label>}
-        </section>
+        <Panel title="Основне">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input name="title_uk" label="Назва (укр)" defaultValue={entry?.title?.uk ?? ""} placeholder={product ? productTitle(base ?? product, "uk") : "Набір «Ранковий»"} />
+            <Input name="title_en" label="Назва (eng)" defaultValue={entry?.title?.en ?? ""} placeholder={product ? productTitle(base ?? product, "en") : "“Morning” set"} />
+            <Input name="tagline_uk" label="Короткий опис (укр)" defaultValue={entry?.tagline?.uk ?? ""} placeholder={base?.blurb?.uk ?? ""} />
+            <Input name="tagline_en" label="Короткий опис (eng)" defaultValue={entry?.tagline?.en ?? ""} placeholder={base?.blurb?.en ?? ""} />
+            <Input name="price" type="number" min={0} label="Ціна, ₴" defaultValue={entry?.priceUah || ""} placeholder={`авто: ${auto}`} hint={`Порожньо = розрахунок за складом${kind === "set" ? " зі знижкою на набір" : ""}.`} />
+            <Select name="stock_mode" label="Наявність" defaultValue={entry?.stockMode ?? product?.stockMode ?? "in_stock"} options={[{ value: "in_stock", label: "В наявності" }, { value: "made_to_order", label: "На замовлення" }]} />
+            <Select name="status" label="Статус" defaultValue={product?.status ?? "draft"} options={[{ value: "published", label: "Опубліковано" }, { value: "draft", label: "Чернетка (не видно на сайті)" }, { value: "archived", label: "В архіві" }]} />
+            {isNew && <Input name="slug" label="Ідентифікатор (необов'язково)" placeholder="set-morning" pattern="[a-z0-9]+(-[a-z0-9]+)*" hint="Латиниця; якщо порожньо, зробимо з назви. Потім не змінюється." />}
+          </div>
+        </Panel>
 
         {kind === "set" && (
-          <fieldset className="card p-5">
-            <legend className="px-1 text-xl font-bold">Склад кошика</legend>
-            <p className="mb-3 text-sm text-muted">Оберіть рослини в кошику. Кожен горщик такого кошика отримає цей склад і свій QR-код.</p>
+          <Panel title="Склад кошика" lead="Оберіть рослини в кошику. Кожен горщик такого кошика отримає цей склад і свій QR-код.">
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {herbs.map((h) => (
-                <li key={h.slug}>
-                  <label className="card flex cursor-pointer items-center gap-2 p-2.5 text-sm">
-                    <input type="checkbox" name="herbs" value={h.slug} defaultChecked={chosen.has(h.slug)} />
-                    <span aria-hidden className="inline-block h-3 w-3 rounded-full" style={{ background: h.color }} />{h.names.uk}
-                  </label>
+                <li key={h.slug} className="sh-surface" style={{ padding: 10 }}>
+                  <Checkbox name="herbs" value={h.slug} defaultChecked={chosen.has(h.slug)}>
+                    <span aria-hidden className="mr-1 inline-block h-3 w-3 rounded-full" style={{ background: h.color }} />{h.names.uk}
+                  </Checkbox>
                 </li>
               ))}
             </ul>
-          </fieldset>
+          </Panel>
         )}
 
-        <section className="card p-5">
-          <h2 className="text-xl font-bold">Догляд на картці</h2>
-          <p className="mb-3 text-sm text-muted">Ці розділи бачить покупець на сторінці товару й за QR-кодом. Порожнє поле = стандартний текст (він показаний сірим).</p>
-          <div className="space-y-3">
+        <Panel title="Догляд на картці" lead="Ці розділи бачить покупець на сторінці товару й за QR-кодом. Порожнє поле означає стандартний текст (він показаний сірим).">
+          <div>
             {CARE_SECTIONS.map((s, i) => (
-              <details key={s} open={i === 0 || Boolean(entry?.content?.[s])} className="rounded-xl border border-line p-3">
-                <summary className="cursor-pointer font-semibold">{sectionTitles[s].uk}{entry?.content?.[s] ? " ✎" : ""}</summary>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <label className={field}><span>Укр</span><textarea name={`${s}_uk`} rows={4} defaultValue={entry?.content?.[s]?.uk ?? ""} placeholder={defaults.find((d) => d.key === s)?.body ?? ""} className="input" maxLength={2000} /></label>
-                  <label className={field}><span>Eng</span><textarea name={`${s}_en`} rows={4} defaultValue={entry?.content?.[s]?.en ?? ""} placeholder={defaultsEn.find((d) => d.key === s)?.body ?? ""} className="input" maxLength={2000} /></label>
+              <Accordion key={s} title={`${sectionTitles[s].uk}${entry?.content?.[s] ? " (змінено)" : ""}`} open={i === 0 || Boolean(entry?.content?.[s])}>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Input multiline rows={4} name={`${s}_uk`} label="Укр" defaultValue={entry?.content?.[s]?.uk ?? ""} placeholder={defaults.find((d) => d.key === s)?.body ?? ""} maxLength={2000} />
+                  <Input multiline rows={4} name={`${s}_en`} label="Eng" defaultValue={entry?.content?.[s]?.en ?? ""} placeholder={defaultsEn.find((d) => d.key === s)?.body ?? ""} maxLength={2000} />
                 </div>
-              </details>
+              </Accordion>
             ))}
           </div>
-        </section>
+        </Panel>
 
-        <div className="sticky bottom-0 -mx-1 flex flex-wrap gap-3 border-t border-line bg-card/95 p-3 backdrop-blur">
-          <button className="btn btn-primary" type="submit">Зберегти</button>
-          <Link href="/admin/catalog" className="btn btn-ghost">До каталогу</Link>
+        <div className="sticky bottom-0 z-10 flex flex-wrap gap-3 rounded-2xl p-3" style={{ background: "var(--glass)", backdropFilter: "blur(16px)" }}>
+          <Button type="submit" variant="primary">Зберегти</Button>
+          <Button variant="secondary" href="/admin/catalog">До каталогу</Button>
         </div>
       </form>
 
       {!isNew && (
-        <section className="card flex flex-wrap items-center gap-3 p-5">
-          {kind === "set" && <form action={duplicateProduct}><input type="hidden" name="slug" value={slug} /><button className="btn btn-ghost" type="submit">Дублювати як чернетку</button></form>}
-          {(entry || !isBuiltIn) && (
-            <form action={resetProduct}><input type="hidden" name="slug" value={slug} />
-              <button className="btn btn-ghost" type="submit">{isBuiltIn ? "Скинути до стандартного" : "Видалити кошик"}</button>
-            </form>
-          )}
-          <Link href="/admin/pots" className="btn btn-ghost">Створити горщики з QR →</Link>
-        </section>
+        <Panel>
+          <div className="flex flex-wrap items-center gap-3">
+            {kind === "set" && <form action={duplicateProduct}><input type="hidden" name="slug" value={slug} /><Button variant="secondary" type="submit">Дублювати як чернетку</Button></form>}
+            {(entry || !isBuiltIn) && (
+              <form action={resetProduct}><input type="hidden" name="slug" value={slug} />
+                <Button variant="danger" type="submit">{isBuiltIn ? "Скинути до стандартного" : "Видалити кошик"}</Button>
+              </form>
+            )}
+            <Button variant="ghost" href="/admin/pots" iconRight="arrow-right">Створити горщики з QR</Button>
+          </div>
+          {!isBuiltIn && <Alert tone="info">Кошик можна видалити, лише поки з нього не виготовлено горщиків.</Alert>}
+        </Panel>
       )}
     </div>
   );

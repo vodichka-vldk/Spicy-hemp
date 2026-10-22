@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Alert, Badge, Button, Grid, Input, Timeline } from "@/ds";
+import { Facts, PageHeader, Panel, StatusBadge } from "@/ui";
 import { ORDER_TRANSITIONS, type OrderStatus } from "@/lib/domain";
 import { dict } from "@/lib/i18n";
 import { novaPoshtaConfigured } from "@/lib/novaposhta";
@@ -29,101 +30,94 @@ export default async function AdminOrder({ params, searchParams }: { params: Pro
   const action = nextAction(o);
   const canWaybill = o.shipping.kind === "np" && ["cod_confirmed", "paid", "processing", "packed"].includes(o.status);
   return (
-    <div className="space-y-6">
-      <p><Link href="/admin/orders" className="text-sm text-muted">← Усі замовлення</Link></p>
-      <header className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-bold"><span className="font-mono">{o.id}</span></h1>
-        <span className="badge">{statusUk(o.status)}</span>
-        <span className="ml-auto text-xl font-bold">{money(o.totalMinor)}</span>
-      </header>
+    <div className="sh-stack-lg">
+      <PageHeader
+        back={{ href: "/admin/orders", label: "Усі замовлення" }}
+        title={<span className="font-mono">{o.id}</span>}
+        actions={<><StatusBadge kind="order" status={o.status} label={statusUk(o.status)} /><span className="h3">{money(o.totalMinor)}</span></>}
+      />
 
-      {action && <p className="card bg-soft p-4 font-semibold text-leaf">Далі: {action}</p>}
+      {action && <Alert tone="info">Далі: {action}</Alert>}
 
       {next.length > 0 && (
-        <section className="card p-4">
-          <h2 className="mb-2 text-lg font-bold">Змінити статус</h2>
+        <Panel title="Змінити статус">
           <div className="flex flex-wrap items-center gap-2">
             {next.map((s) => (
               <form key={s} action={setStatus}>
                 <input type="hidden" name="id" value={o.id} />
                 <input type="hidden" name="status" value={s} />
-                <button className={`btn ${BAD.includes(s) ? "btn-ghost" : "btn-primary"}`} type="submit">{statusUk(s)}</button>
+                <Button type="submit" variant={BAD.includes(s) ? "secondary" : "primary"}>{statusUk(s)}</Button>
               </form>
             ))}
           </div>
-        </section>
+        </Panel>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <section className="card p-5 text-sm">
-          <h2 className="mb-2 text-lg font-bold">Клієнт</h2>
-          <p className="font-semibold">{o.customer.name}</p>
-          <p><a href={`tel:${o.customer.phone}`} className="text-leaf">{o.customer.phone}</a></p>
-          <p>{o.customer.email}</p>
-          <h2 className="mb-2 mt-4 text-lg font-bold">Доставка ({o.shipping.kind === "np" ? "Нова пошта" : "за кордон"})</h2>
-          <p>{o.shipping.country} · {o.shipping.city}</p><p>{o.shipping.address}</p>{o.shipping.postcode && <p>{o.shipping.postcode}</p>}
-          {o.gift.isGift && <p className="mt-3 rounded bg-soft p-2">Подарунок{o.gift.message ? `: ${o.gift.message}` : ""}</p>}
-          {o.note && <p className="mt-3 text-muted">Коментар клієнта: {o.note}</p>}
-        </section>
-        <section className="card p-5 text-sm">
-          <h2 className="mb-2 text-lg font-bold">Склад замовлення</h2>
-          <ul className="divide-y divide-line">{o.items.map((i, n) => (<li key={n} className="flex justify-between py-2"><span>{i.title} × {i.qty}</span><span>{money(i.unitMinor * i.qty)}</span></li>))}</ul>
-          <p className="mt-2 flex justify-between"><span>Доставка</span><span>{money(o.shippingMinor)}</span></p>
-          <p className="flex justify-between text-lg font-bold"><span>Разом</span><span>{money(o.totalMinor)}</span></p>
-          <p className="mt-2 text-muted">{payUk[o.payment]}{o.paymentInfo?.status === "paid" ? " · сплачено" : ""}{o.paymentInfo?.status === "refunded" ? " · кошти повернено" : ""}</p>
-        </section>
-      </div>
+      <Grid cols="two">
+        <Panel title="Клієнт і доставка">
+          <Facts items={[
+            { label: "Клієнт", value: o.customer.name },
+            { label: "Телефон", value: <a href={`tel:${o.customer.phone}`}>{o.customer.phone}</a> },
+            { label: "Пошта", value: o.customer.email },
+            { label: o.shipping.kind === "np" ? "Нова пошта" : "За кордон", value: `${o.shipping.country} · ${o.shipping.city}, ${o.shipping.address}${o.shipping.postcode ? `, ${o.shipping.postcode}` : ""}` },
+          ]} />
+          {o.gift.isGift && <Alert tone="info" title="Подарунок">{o.gift.message ?? ""}</Alert>}
+          {o.note && <p className="body-sm sh-muted">Коментар клієнта: {o.note}</p>}
+        </Panel>
+        <Panel title="Склад замовлення">
+          <ul className="sh-stack body-sm">{o.items.map((i, n) => (<li key={n} className="flex justify-between"><span>{i.title} × {i.qty}</span><span>{money(i.unitMinor * i.qty)}</span></li>))}</ul>
+          <p className="body-sm flex justify-between"><span>Доставка</span><span>{money(o.shippingMinor)}</span></p>
+          <p className="h3 flex justify-between"><span>Разом</span><span>{money(o.totalMinor)}</span></p>
+          <p className="body-sm sh-muted">{payUk[o.payment]}{o.paymentInfo?.status === "paid" ? " · сплачено" : ""}{o.paymentInfo?.status === "refunded" ? " · кошти повернено" : ""}</p>
+        </Panel>
+      </Grid>
 
-      <section className="card p-5">
-        <h2 className="mb-2 text-lg font-bold">QR-коди цього замовлення</h2>
-        {short && <p role="alert" className="mb-3 rounded-lg bg-soft p-3 font-semibold text-clay">Не вистачає на складі: {short}. Створіть партію в «Горщики й QR» і виділіть ще раз.</p>}
+      <Panel title="QR-коди цього замовлення">
+        {short && <Alert tone="danger">Не вистачає на складі: {short}. Створіть партію в «Горщики й QR» і виділіть ще раз.</Alert>}
         {o.potCodes.length > 0 && !short ? (
-          <ul className="flex flex-wrap gap-2">{o.potCodes.map((c) => (<li key={c} className="badge font-mono">{formatCode(c)}</li>))}</ul>
+          <ul className="flex flex-wrap gap-2">{o.potCodes.map((c) => (<li key={c}><Badge tone="leaf"><span className="font-mono">{formatCode(c)}</span></Badge></li>))}</ul>
         ) : (
-          <form action={allocatePots}><input type="hidden" name="id" value={o.id} /><button className="btn btn-clay" type="submit">Виділити горщики зі складу</button></form>
+          <form action={allocatePots}><input type="hidden" name="id" value={o.id} /><Button type="submit" variant="accent">Виділити горщики зі складу</Button></form>
         )}
-      </section>
+      </Panel>
 
       {o.shipping.kind === "np" && (
-        <section className="card p-5 text-sm">
-          <h2 className="mb-2 text-lg font-bold">Відправлення (Нова пошта)</h2>
+        <Panel title="Відправлення (Нова пошта)">
           {o.shipment ? (
             <>
-              <p>ТТН: <span className="font-mono font-semibold">{o.shipment.ttn}</span> · <a className="text-leaf underline" href={`https://novaposhta.ua/tracking/?cargo_number=${o.shipment.ttn}`} target="_blank" rel="noopener noreferrer">стеження</a></p>
-              {o.shipment.status && <p className="text-muted">Статус: {o.shipment.status}{o.shipment.trackedAt ? ` (${o.shipment.trackedAt.slice(0, 16).replace("T", " ")})` : ""}</p>}
-              {novaPoshtaConfigured() && <form action={syncTracking} className="mt-2"><input type="hidden" name="id" value={o.id} /><button className="btn btn-ghost" type="submit">Оновити статус посилки</button></form>}
+              <p>ТТН: <span className="font-mono font-semibold">{o.shipment.ttn}</span> · <a className="underline" href={`https://novaposhta.ua/tracking/?cargo_number=${o.shipment.ttn}`} target="_blank" rel="noopener noreferrer">стеження</a></p>
+              {o.shipment.status && <p className="body-sm sh-muted">Статус: {o.shipment.status}{o.shipment.trackedAt ? ` (${o.shipment.trackedAt.slice(0, 16).replace("T", " ")})` : ""}</p>}
+              {novaPoshtaConfigured() && <form action={syncTracking}><input type="hidden" name="id" value={o.id} /><Button type="submit" variant="secondary">Оновити статус посилки</Button></form>}
             </>
           ) : canWaybill ? (
-            <form action={addWaybill} className="flex flex-wrap items-end gap-2">
+            <form action={addWaybill} className="sh-stack">
               <input type="hidden" name="id" value={o.id} />
-              <label className="field"><span>ТТН (залиште порожнім, щоб створити автоматично)</span><input name="ttn" inputMode="numeric" className="input" placeholder="20450000000000" /></label>
-              <button className="btn btn-primary" type="submit">{novaPoshtaConfigured() ? "Створити/додати ТТН і відправити" : "Додати ТТН і відправити"}</button>
-              {!novaPoshtaConfigured() && <p className="basis-full text-muted">Автоматичне створення вимкнене (немає NOVA_POSHTA_API_KEY): введіть номер ТТН вручну.</p>}
-              {(!o.shipping.cityRef || !o.shipping.warehouseRef) && novaPoshtaConfigured() && <p className="basis-full text-muted">Клієнт не обрав відділення зі списку: автоматична ТТН недоступна, створіть її в кабінеті Нової пошти й введіть номер.</p>}
+              <Input name="ttn" label="ТТН (залиште порожнім, щоб створити автоматично)" inputMode="numeric" placeholder="20450000000000" />
+              <div><Button type="submit" variant="primary">{novaPoshtaConfigured() ? "Створити/додати ТТН і відправити" : "Додати ТТН і відправити"}</Button></div>
+              {!novaPoshtaConfigured() && <p className="body-sm sh-muted">Автоматичне створення вимкнене (немає NOVA_POSHTA_API_KEY): введіть номер ТТН вручну.</p>}
+              {(!o.shipping.cityRef || !o.shipping.warehouseRef) && novaPoshtaConfigured() && <p className="body-sm sh-muted">Клієнт не обрав відділення зі списку: автоматична ТТН недоступна, створіть її в кабінеті Нової пошти й введіть номер.</p>}
             </form>
-          ) : <p className="text-muted">ТТН можна додати, коли замовлення оплачене/підтверджене.</p>}
-        </section>
+          ) : <p className="sh-muted">ТТН можна додати, коли замовлення оплачене/підтверджене.</p>}
+        </Panel>
       )}
 
-      <section className="card p-5 text-sm">
-        <h2 className="mb-2 text-lg font-bold">Нотатка для себе</h2>
-        <form action={saveAdminNote} className="flex gap-2"><input type="hidden" name="id" value={o.id} /><input name="note" defaultValue={o.adminNote ?? ""} className="input" maxLength={1000} aria-label="Нотатка" /><button className="btn btn-ghost" type="submit">Зберегти</button></form>
-      </section>
+      <Panel title="Нотатка для себе">
+        <form action={saveAdminNote} className="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="id" value={o.id} />
+          <div style={{ flex: "1 1 16rem" }}><Input name="note" defaultValue={o.adminNote ?? ""} maxLength={1000} aria-label="Нотатка" /></div>
+          <Button type="submit" variant="secondary">Зберегти</Button>
+        </form>
+      </Panel>
 
-      <section className="card p-5 text-sm">
-        <h2 className="mb-3 text-lg font-bold">Історія</h2>
-        {events.length === 0 ? <p className="text-muted">Подій ще немає.</p> : (
-          <ol className="space-y-2 border-l-2 border-line pl-4">
-            {events.map((e) => (
-              <li key={e.id}>
-                <span className="font-semibold">{e.from === e.to ? "Примітка" : statusUk(e.to)}</span>
-                <span className="text-muted"> · {e.ts.slice(0, 16).replace("T", " ")} · {actorUk[e.actorType]}{e.actor ? ` (${e.actor})` : ""}</span>
-                {e.note && <p className="text-muted">{e.note}</p>}
-              </li>
-            ))}
-          </ol>
+      <Panel title="Історія">
+        {events.length === 0 ? <p className="sh-muted">Подій ще немає.</p> : (
+          <Timeline events={events.map((e, i) => ({
+            title: e.from === e.to ? "Примітка" : statusUk(e.to),
+            time: `${e.ts.slice(0, 16).replace("T", " ")} · ${actorUk[e.actorType]}${e.actor ? ` (${e.actor})` : ""}${e.note ? ` · ${e.note}` : ""}`,
+            done: i < events.length - 1, current: i === events.length - 1,
+          }))} />
         )}
-      </section>
+      </Panel>
     </div>
   );
 }

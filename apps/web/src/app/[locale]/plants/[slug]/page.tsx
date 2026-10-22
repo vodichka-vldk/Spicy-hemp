@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Accordion, HerbCard, QuickFacts, cycleKey, petKey, toneAt } from "@/components/HerbParts";
-import { Alert, Breadcrumbs, Button, Grid, Icon, PlantHero } from "@/ds";
+import { Alert, Breadcrumbs, Button, Chip, Grid, Icon, PlantHero } from "@/ds";
 import { PotArt } from "@/components/PotArt";
 import { PotContext } from "@/components/PotContext";
 import { getFamily, getHerb, getHerbs, herbsOfFamily } from "@/lib/content";
@@ -122,17 +122,17 @@ export default async function PlantPage({ params }: P) {
         </div>
 
         <aside className="space-y-6">
-          <div className="card p-5">
-            <h2 className="text-lg font-bold">{t(locale, "sec_family")}</h2>
-            <p className="mt-1 text-sm text-muted">{pick(fam.description, locale)}</p>
-            <Link href={`/${locale}/families/${fam.slug}`} className="mt-3 inline-block font-semibold text-leaf">{fam.latin} →</Link>
+          <div className="sh-surface sh-stack">
+            <h2 className="h3">{t(locale, "sec_family")}</h2>
+            <p className="body-sm sh-muted">{pick(fam.description, locale)}</p>
+            <Button variant="ghost" size="sm" href={`/${locale}/families/${fam.slug}`} iconRight="arrow-right">{fam.latin}</Button>
           </div>
           {companions.length > 0 && (
-            <div className="card p-5">
-              <h2 className="text-lg font-bold">{t(locale, "sec_companions")}</h2>
-              <ul className="mt-2 space-y-1">
-                {companions.map((c) => (<li key={c.slug}><Link href={`/${locale}/plants/${c.slug}`} className="text-leaf">{c.names[locale]}</Link></li>))}
-              </ul>
+            <div className="sh-surface sh-stack">
+              <h2 className="h3">{t(locale, "sec_companions")}</h2>
+              <div className="flex flex-wrap gap-2">
+                {companions.map((c) => (<Chip key={c.slug} href={`/${locale}/plants/${c.slug}`}>{c.names[locale]}</Chip>))}
+              </div>
             </div>
           )}
           <p className="text-xs text-muted">{t(locale, "pet_note")}</p>

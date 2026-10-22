@@ -16,6 +16,12 @@ js = js.replace(/\};\n\}\)\(\);\s*$/, "});\n}\n");
 js = js.replaceAll("h('a', {", "h(A, {");
 js = js.replace("var Tag = p.href ? 'a' : 'div';", "var Tag = p.href ? A : 'div';");
 js = js.replace("var Tag = p.href ? 'a' : 'button';", "var Tag = p.href ? A : 'button';");
+// form support: the bundle drops name/value/formAction, which server-rendered forms need
+js = js.replace("href: p.href, onClick: p.onClick, disabled: p.disabled || p.loading, 'aria-busy'", "href: p.href, onClick: p.onClick, name: p.name, value: p.value, formAction: p.formAction, formNoValidate: p.formNoValidate, download: p.download, target: p.target, rel: p.rel, 'aria-label': p.ariaLabel, disabled: p.disabled || p.loading, 'aria-busy'");
+js = js.replace("h('select', { id: id, className: 'sh-input body',", "h('select', { id: id, name: p.name, required: p.required, disabled: p.disabled, 'aria-label': p.ariaLabel, className: 'sh-input body',");
+js = js.replace("h('input', { type: 'checkbox', checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange, disabled: p.disabled })", "h('input', { type: 'checkbox', id: p.id, name: p.name, value: p.value, checked: p.checked, defaultChecked: p.defaultChecked, onChange: p.onChange, disabled: p.disabled, required: p.required })");
+js = js.replace("h('input', { type: 'checkbox', role: 'switch', checked: p.checked,", "h('input', { type: 'checkbox', role: 'switch', name: p.name, value: p.value, checked: p.checked,");
+js = js.replace("h('input', { type: 'radio', name: p.name, value: p.value, checked: p.checked,", "h('input', { type: 'radio', name: p.name, value: p.value, required: p.required, checked: p.checked,");
 const head = `// @ts-nocheck
 "use client";
 // Spicy Hemp design system components, ported from the design system's bundle.js by scripts/port-ds.mjs.

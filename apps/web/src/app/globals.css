@@ -67,3 +67,7 @@ details.acc > .acc-body { padding: 0 var(--space-1) var(--space-5); color: var(-
 .skip:focus { left: .5rem; top: .5rem; }
 .pb-nav { padding-bottom: calc(var(--bottomnav-h) + 24px + env(safe-area-inset-bottom)); }
 @media (min-width: 768px) { .pb-nav { padding-bottom: 0; } }
+
+/* Native file picker styled like a design-system secondary button */
+input[type="file"] { font: inherit; color: var(--ink-muted); max-width: 100%; }
+input[type="file"]::file-selector-button { min-height: var(--tap-target); margin-right: var(--space-3); padding: 0 var(--space-5); border: 2px solid var(--btn-edge); border-radius: var(--radius-pill); background: var(--bg-card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-pill); }

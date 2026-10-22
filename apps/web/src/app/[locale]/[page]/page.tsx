@@ -21,12 +21,12 @@ export default async function Info({ params }: P) {
   if (!isLocale(locale) || !p) notFound();
   return (
     <div className="container-x max-w-3xl py-10">
-      <h1 className="text-4xl font-bold text-leaf">{pick(p.title, locale)}</h1>
-      <p className="mt-3 text-lg text-muted">{pick(p.lead, locale)}</p>
+      <h1>{pick(p.title, locale)}</h1>
+      <p className="body-lg mt-3">{pick(p.lead, locale)}</p>
       {p.sections.map((s, i) => (
         <section key={i} className="mt-8">
-          <h2 className="text-2xl font-bold">{pick(s.h, locale)}</h2>
-          <p className="mt-2">{pick(s.p, locale)}</p>
+          <h2>{pick(s.h, locale)}</h2>
+          <p className="body mt-2">{pick(s.p, locale)}</p>
         </section>
       ))}
     </div>

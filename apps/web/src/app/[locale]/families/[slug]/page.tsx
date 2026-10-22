@@ -24,9 +24,9 @@ export default async function FamilyPage({ params }: P) {
   const list = herbsOfFamily(slug);
   return (
     <div className="container-x py-8">
-      <p className="text-sm italic text-muted">{f.latin}</p>
-      <h1 className="text-4xl font-bold text-leaf">{f.names[locale]}</h1>
-      <p className="mt-3 max-w-2xl text-lg text-muted">{pick(f.description, locale)}</p>
+      <p className="latin sh-muted">{f.latin}</p>
+      <h1>{f.names[locale]}</h1>
+      <p className="body-lg mt-3 max-w-2xl">{pick(f.description, locale)}</p>
       <div className="mt-8">
         <Grid cols="cards">
           {list.map((h, i) => (<HerbCard key={h.slug} herb={h} locale={locale} tone={toneAt(i)} />))}

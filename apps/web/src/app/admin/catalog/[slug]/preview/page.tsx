@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Alert, Chip } from "@/ds";
 import { ProductView } from "@/components/ProductView";
 import { loadProducts } from "@/lib/catalog-server";
 import { isLocale } from "@/lib/i18n";
 import { getProduct } from "@/lib/shop";
+import { PageHeader } from "@/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -15,15 +16,16 @@ export default async function Preview({ params, searchParams }: { params: Promis
   const p = getProduct(slug, await loadProducts());
   if (!p) notFound();
   return (
-    <div>
-      <div className="sticky top-[6.5rem] z-30 flex flex-wrap items-center gap-2 rounded-xl bg-soft p-3 text-sm">
-        <Link href={`/admin/catalog/${slug}`} className="font-semibold text-leaf">← Назад до редактора</Link>
-        <span className="text-muted">Попередній перегляд{p.status !== "published" ? " (товар не опублікований, покупці його не бачать)" : ""}</span>
-        <span className="ml-auto flex gap-1">
-          {(["uk", "en"] as const).map((l) => (<Link key={l} href={`/admin/catalog/${slug}/preview?lang=${l}`} className="chip !min-h-8" aria-current={l === locale ? "page" : undefined}>{l.toUpperCase()}</Link>))}
-        </span>
+    <div className="sh-stack-lg">
+      <PageHeader
+        back={{ href: `/admin/catalog/${slug}`, label: "Назад до редактора" }}
+        title="Попередній перегляд"
+        actions={<>{(["uk", "en"] as const).map((l) => (<Chip key={l} href={`/admin/catalog/${slug}/preview?lang=${l}`} selected={l === locale}>{l.toUpperCase()}</Chip>))}</>}
+      />
+      {p.status !== "published" && <Alert tone="warning">Товар не опублікований, покупці його не бачать.</Alert>}
+      <div data-theme="garden" className="rounded-[var(--radius-xl)]" style={{ background: "var(--bg-page)", color: "var(--ink)" }}>
+        <ProductView p={p} locale={locale} preview />
       </div>
-      <ProductView p={p} locale={locale} preview />
     </div>
   );
 }

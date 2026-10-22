@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Alert, AppBar, Badge, Button, EmptyState } from "@/ds";
+import { Accordion, Alert, AppBar, Button, EmptyState, Input, Select } from "@/ds";
 
 type Q = { id: string; body: string; answer: string | null; status: string; createdAt: string };
 type Item = { code: string; label: string; name: string | null; title: string | null; activatedAt: string | null; questions: Q[] };
@@ -100,8 +100,8 @@ export function MiniApp({ bot }: { bot: string }) {
 
       <section className="sh-surface">
         <h2 className="h3">{t.addCode}</h2>
-        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); void activate(code.toUpperCase().replace(/[^A-Z0-9]/g, "")); }}>
-          <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t.codePh} aria-label={t.codePh} maxLength={12} autoCapitalize="characters" />
+        <form className="mt-2 flex items-start gap-2" onSubmit={(e) => { e.preventDefault(); void activate(code.toUpperCase().replace(/[^A-Z0-9]/g, "")); }}>
+          <div style={{ flex: 1 }}><Input value={code} onChange={(e: { target: { value: string } }) => setCode(e.target.value)} placeholder={t.codePh} aria-label={t.codePh} maxLength={12} autoCapitalize="characters" /></div>
           <Button variant="secondary" type="submit">{t.add}</Button>
         </form>
       </section>
@@ -132,36 +132,34 @@ function PotRow({ item, t, call, symptoms, reload }: { item: Item; t: (typeof TE
     <li className="sh-surface">
       <p className="overline sh-muted">{item.label}</p>
       <p className="title">{item.name ?? item.title ?? item.label}</p>
-      <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); void save(); }}>
-        <input className="input" value={name} onChange={(e) => { setName(e.target.value); setState(""); }} placeholder={t.namePh} aria-label={t.name} maxLength={60} />
+      <form className="mt-3 flex items-start gap-2" onSubmit={(e) => { e.preventDefault(); void save(); }}>
+        <div style={{ flex: 1 }}><Input value={name} onChange={(e: { target: { value: string } }) => { setName(e.target.value); setState(""); }} placeholder={t.namePh} aria-label={t.name} maxLength={60} /></div>
         <Button variant="accent" type="submit">{t.save}</Button>
       </form>
-      {state && <p role="status" className="mt-1 text-sm text-muted">{state === "saved" ? t.saved : t.error}</p>}
-      <a className="mt-2 inline-block text-sm text-leaf underline" href={`/p/${item.code}`}>{t.card}</a>
+      {state && <div className="mt-2"><Alert tone={state === "saved" ? "success" : "danger"}>{state === "saved" ? t.saved : t.error}</Alert></div>}
+      <div className="mt-2"><Button size="sm" variant="ghost" href={`/p/${item.code}`} iconRight="arrow-right">{t.card}</Button></div>
 
-      <details className="mt-3 rounded-xl border border-line p-3">
-        <summary className="cursor-pointer font-semibold">{t.ask}</summary>
-        <form className="mt-3 space-y-2" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
-          <select className="input" value={symptom} onChange={(e) => setSymptom(e.target.value)} aria-label={t.symptom}>
-            <option value="">{t.symptom}</option>
-            {symptoms.map((s) => (<option key={s.key} value={s.key}>{s.label}</option>))}
-          </select>
-          <textarea className="input" rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.askPh} aria-label={t.askPh} maxLength={1000} required />
-          <Button variant="accent" type="submit">{t.send}</Button>
+      <div className="mt-3">
+      <Accordion title={t.ask}>
+        <form className="sh-stack" onSubmit={(e) => { e.preventDefault(); void ask(); }}>
+          <Select ariaLabel={t.symptom} value={symptom} onChange={(e: { target: { value: string } }) => setSymptom(e.target.value)} options={[{ value: "", label: t.symptom }, ...symptoms.map((s) => ({ value: s.key, label: s.label }))]} />
+          <Input multiline rows={3} value={text} onChange={(e: { target: { value: string } }) => setText(e.target.value)} placeholder={t.askPh} aria-label={t.askPh} maxLength={1000} required />
+          <div><Button variant="accent" type="submit">{t.send}</Button></div>
         </form>
         {asked && <div className="mt-2"><Alert tone="success">{t.sent}</Alert></div>}
         {hint && <div className="mt-2"><Alert tone="info" title={t.firstAid}>{hint.fix}</Alert></div>}
         {item.questions.length > 0 && (
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="sh-stack mt-3">
             {item.questions.map((q) => (
-              <li key={q.id} className="rounded-lg bg-soft p-3">
-                <p>{q.body}</p>
-                {q.answer ? <p className="mt-1 font-semibold text-leaf">{t.katya}: {q.answer}</p> : <p className="mt-1 text-muted">{t.waiting}</p>}
+              <li key={q.id} className="sh-surface" style={{ padding: 12 }}>
+                <p className="body-sm">{q.body}</p>
+                {q.answer ? <p className="body-sm label mt-1" style={{ color: "var(--leaf)" }}>{t.katya}: {q.answer}</p> : <p className="body-sm sh-muted mt-1">{t.waiting}</p>}
               </li>
             ))}
           </ul>
         )}
-      </details>
+      </Accordion>
+      </div>
     </li>
   );
 }

@@ -38,7 +38,7 @@ export function SiteHeader({ locale, brand, items, cartLabel, homeLabel }: { loc
     <DsHeader
       brand={brand}
       homeHref={admin ? "/admin" : home}
-      brandLabel={admin ? "Адмінка" : homeLabel}
+      brandLabel={admin ? `${brand}: Адмінка` : brand}
       items={items.map((i) => ({ label: i.label, href: i.href, current: isCurrent(path, i.href, home) }))}
       end={<Suspense fallback={null}><Lang locale={locale} /></Suspense>}
       cartHref={`/${locale}/cart`}

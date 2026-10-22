@@ -1,20 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { PotArt } from "./PotArt";
 import { AddToCart } from "./AddToCart";
+import { GardenArt, gardenRatio } from "./GardenArt";
 import type { Glaze } from "@/lib/shop-calc";
 import type { Locale } from "@/lib/types";
 
-/** Product visual follows the chosen glaze; sets show all their herbs side by side. */
-export function ProductBuy({ slug, colors, locale }: { slug: string; colors: string[]; locale: Locale }) {
+/** Product picture (follows the chosen glaze for single pots) and the buy button. Baskets are wicker: no glaze choice. */
+export function ProductArt({ colors, glaze, ratio }: { colors: string[]; glaze?: Glaze; ratio?: string }) {
+  return (
+    <div className="overflow-hidden rounded-[2rem] border border-line" style={{ aspectRatio: ratio ?? gardenRatio(colors.length) }}>
+      <GardenArt colors={colors} glaze={glaze} />
+    </div>
+  );
+}
+
+export function ProductBuy({ slug, colors, locale, basket }: { slug: string; colors: string[]; locale: Locale; basket: boolean }) {
   const [glaze, setGlaze] = useState<Glaze>("sage");
   return (
     <>
-      <div className={`overflow-hidden rounded-[2rem] border border-line ${colors.length > 1 ? "grid grid-cols-3" : ""}`}>
-        {colors.map((c, i) => (<div key={i} className="aspect-square"><PotArt color={c} glaze={glaze} /></div>))}
-      </div>
-      <div className="mt-6"><AddToCart slug={slug} locale={locale} onGlaze={setGlaze} /></div>
+      <ProductArt colors={colors} glaze={basket ? undefined : glaze} />
+      <div className="mt-5"><AddToCart slug={slug} locale={locale} onGlaze={setGlaze} withGlaze={!basket} /></div>
     </>
   );
 }

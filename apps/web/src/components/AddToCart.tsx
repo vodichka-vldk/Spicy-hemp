@@ -7,14 +7,14 @@ import { glazeColor, glazes, type Glaze } from "@/lib/shop-calc";
 import type { Locale } from "@/lib/types";
 import { useCart } from "./CartProvider";
 
-export function AddToCart({ slug, locale, onGlaze }: { slug: string; locale: Locale; onGlaze?: (g: Glaze) => void }) {
+export function AddToCart({ slug, locale, onGlaze, withGlaze = true }: { slug: string; locale: Locale; onGlaze?: (g: Glaze) => void; withGlaze?: boolean }) {
   const { add } = useCart();
   const [glaze, setGlaze] = useState<Glaze>("sage");
   const [done, setDone] = useState(false);
 
   return (
     <div>
-      <fieldset>
+      {withGlaze && <fieldset>
         <legend className="mb-2 font-semibold">{dict.glaze[locale]}: {dict[`glaze_${glaze}` as "glaze_sage"][locale]}</legend>
         <div className="flex gap-3">
           {glazes.map((g) => (
@@ -25,10 +25,10 @@ export function AddToCart({ slug, locale, onGlaze }: { slug: string; locale: Loc
             </label>
           ))}
         </div>
-      </fieldset>
+      </fieldset>}
       <button
         type="button"
-        className="btn btn-primary mt-5 w-full sm:w-auto"
+        className={`btn btn-primary w-full sm:w-auto ${withGlaze ? "mt-5" : ""}`}
         onClick={() => { add(slug, glaze); setDone(true); window.setTimeout(() => setDone(false), 4000); }}
       >
         🛒 {dict.add_to_cart[locale]}

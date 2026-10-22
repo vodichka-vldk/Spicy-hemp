@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Accordion } from "@/components/HerbParts";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
+import { GardenArt, gardenRatio } from "@/components/GardenArt";
 import { PotArt } from "@/components/PotArt";
 import { cardSections } from "@/lib/card";
 import { getHerb } from "@/lib/content";
@@ -30,15 +31,8 @@ export default async function GardenCard({ params }: P) {
   const sections = item.product ? cardSections(item.product, locale) : [];
   const made = new Date(item.readyOn + "T00:00:00Z").toLocaleDateString(locale === "uk" ? "uk-UA" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   const bot = process.env.NEXT_PUBLIC_TG_BOT;
-  const cols = herbs.length <= 1 ? 1 : 2;
-  const rows = Math.max(1, Math.ceil(herbs.length / cols));
-  const art = (
-    <div className="grid h-full w-full" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }}>
-      {herbs.map((h) => (<div key={h.slug} className="overflow-hidden"><PotArt color={h.color} /></div>))}
-      {herbs.length % cols === 1 && cols > 1 && <div className="bg-soft" aria-hidden />}
-    </div>
-  );
-  const ratio = `${cols} / ${rows}`;
+  const art = <GardenArt colors={herbs.map((h) => h.color)} />;
+  const ratio = gardenRatio(herbs.length);
 
   return (
     <div className="container-x max-w-xl py-6">

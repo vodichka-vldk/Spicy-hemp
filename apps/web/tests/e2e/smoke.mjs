@@ -128,12 +128,27 @@ const admin = await browser.newContext({ httpCredentials: { username: "admin", p
 const ap = await admin.newPage();
 // make sure there is stock regardless of earlier runs
 await ap.goto(BASE + "/admin/pots");
-await ap.selectOption("select[name=species]", "basil");
+await ap.selectOption("select[name=product]", "basil");
 await ap.fill("input[name=count]", "3");
 await ap.fill("input[name=batch]", "E2E");
-await ap.getByRole("button", { name: "Generate" }).click();
+await ap.getByRole("button", { name: "Make" }).click();
 await ap.waitForLoadState("networkidle");
 ok((await ap.getByText("E2E").count()) >= 3, "admin can generate a batch of pots");
+// baskets: one form, one QR per basket, card opens from the scan
+await ap.selectOption("select[name=product]", "set-tea");
+await ap.fill("input[name=count]", "2");
+await ap.fill("input[name=batch]", "E2EK");
+await ap.getByRole("button", { name: "Make" }).click();
+await ap.waitForLoadState("networkidle");
+const basketHref = await ap.locator("tr", { hasText: "E2EK" }).first().locator("a[href^='/p/']").getAttribute("href");
+ok(Boolean(basketHref), "admin can generate a batch of baskets");
+const gp = await (await browser.newContext({ ...devices["iPhone 13"], locale: "uk-UA" })).newPage();
+await gp.goto(BASE + basketHref);
+await gp.waitForURL(/\/uk\/garden\//);
+ok(/САД · \d{3}/.test(await gp.locator("figcaption").innerText()), "basket QR opens the garden card with its number");
+ok((await gp.locator("details.acc").count()) === 6, "garden card has six care sections");
+ok((await gp.locator("a[href*='/plants/']").count()) >= 3, "garden card lists the herbs in the basket");
+await gp.screenshot({ path: `${SHOTS}/10-garden-card.png`, fullPage: true });
 await ap.goto(BASE + "/admin/orders");
 ok(await ap.getByText(orderId).count() >= 1, "admin lists the new order");
 await ap.getByText(orderId).first().click();

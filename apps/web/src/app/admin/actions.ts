@@ -64,7 +64,7 @@ export async function allocatePots(formData: FormData) {
   if (taken.length + takenItems.length < needed) redirect(`/admin/orders/${id}?short=${needed - taken.length - takenItems.length}`);
 }
 
-export async function generateBatch(formData: FormData) {
+async function generatePots(formData: FormData) {
   const species = String(formData.get("species"));
   const count = Math.min(500, Math.max(1, Number(formData.get("count")) || 1));
   const batch = String(formData.get("batch") || "").trim().slice(0, 40) || `B-${new Date().toISOString().slice(0, 10)}`;
@@ -83,7 +83,7 @@ export async function generateBatch(formData: FormData) {
 }
 
 /** Makes a batch of baskets of one set; each gets its own QR code and "САД · NNN" number. */
-export async function generateBasketBatch(formData: FormData) {
+async function generateBaskets(formData: FormData) {
   const slug = String(formData.get("product"));
   const product = getProduct(slug);
   if (!product || product.kind !== "set") return;
@@ -100,4 +100,13 @@ export async function generateBasketBatch(formData: FormData) {
   }
   await db.upsertItems(items);
   revalidatePath("/admin/pots");
+}
+
+/** One form for everything with a QR code: pick a product, the kind (basket or single pot) follows from it. */
+export async function generateItems(formData: FormData) {
+  const slug = String(formData.get("product"));
+  const product = getProduct(slug);
+  if (!product) return;
+  formData.set(product.kind === "set" ? "product" : "species", slug);
+  return product.kind === "set" ? generateBaskets(formData) : generatePots(formData);
 }

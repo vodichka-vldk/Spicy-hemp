@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <strong className="text-leaf">🌿 Admin</strong>
             <Link href="/admin">Analytics</Link>
             <Link href="/admin/orders">Orders</Link>
-            <Link href="/admin/pots">Pots &amp; QR</Link>
+            <Link href="/admin/pots">Gardens &amp; QR</Link>
             <Link href="/" className="ml-auto text-muted">Site →</Link>
           </nav>
         </header>

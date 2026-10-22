@@ -23,5 +23,5 @@ export async function POST(req: Request) {
     };
   });
   const symptoms = SYMPTOMS.map((key) => ({ key, label: hintFor(key, a.owner.locale)!.symptom }));
-  return Response.json({ owner: { firstName: a.owner.firstName ?? null, locale: a.owner.locale }, items, symptoms, startParam: a.auth.startParam ?? null }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ owner: { firstName: a.owner.firstName ?? null, locale: a.owner.locale, notify: a.owner.notify, timezone: a.owner.timezone ?? "Europe/Kyiv", quietFrom: a.owner.quietFrom ?? "21:00", quietUntil: a.owner.quietUntil ?? "08:00" }, items, symptoms, startParam: a.auth.startParam ?? null }, { headers: { "Cache-Control": "no-store" } });
 }

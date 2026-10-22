@@ -87,7 +87,7 @@ export async function resetProduct(formData: FormData) {
   }
   const photos = (await store().listCatalog()).find((e) => e.slug === slug)?.photos ?? [];
   await store().deleteCatalogEntry(slug);
-  await Promise.all(photos.map(removePhoto));
+  await Promise.all(photos.map((p) => removePhoto(p)));
   refreshShop();
   redirect(isBuiltIn(slug) ? `/admin/catalog/${slug}?saved=1` : "/admin/catalog");
 }

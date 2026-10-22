@@ -4,8 +4,8 @@ import path from "node:path";
 
 export const MAX_PHOTO_BYTES = 5_000_000;
 export const MAX_PRODUCT_PHOTOS = 8;
-const BUCKET = "catalog";
-const LOCAL_DIR = () => path.join(process.cwd(), ".data", "uploads", BUCKET);
+export type Bucket = "catalog" | "journal";
+const LOCAL_DIR = (bucket: Bucket) => path.join(process.cwd(), ".data", "uploads", bucket);
 
 const useSupabase = () => Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 const base = () => process.env.SUPABASE_URL!.replace(/\/$/, "");
@@ -23,12 +23,12 @@ export function sniffImage(b: Uint8Array): "jpg" | "png" | "webp" | null {
 /** A stored path is `<product>/<random>.<ext>`; anything else is rejected before touching the disk or the network. */
 export const isPhotoPath = (p: string) => /^[a-z0-9]+(-[a-z0-9]+)*\/[a-f0-9]{16}\.(jpg|png|webp)$/.test(p);
 
-export const photoUrl = (p: string) => (useSupabase() ? `${base()}/storage/v1/object/public/${BUCKET}/${p}` : `/media/${BUCKET}/${p}`);
+export const photoUrl = (p: string) => (useSupabase() ? `${base()}/storage/v1/object/public/catalog/${p}` : `/media/catalog/${p}`);
 
-export async function savePhoto(product: string, bytes: Uint8Array, ext: "jpg" | "png" | "webp"): Promise<string> {
+export async function savePhoto(product: string, bytes: Uint8Array, ext: "jpg" | "png" | "webp", bucket: Bucket = "catalog"): Promise<string> {
   const p = `${product}/${randomBytes(8).toString("hex")}.${ext}`;
   if (useSupabase()) {
-    const res = await fetch(`${base()}/storage/v1/object/${BUCKET}/${p}`, {
+    const res = await fetch(`${base()}/storage/v1/object/${bucket}/${p}`, {
       method: "POST",
       headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": MIME[ext] },
       body: bytes as unknown as BodyInit,
@@ -36,25 +36,33 @@ export async function savePhoto(product: string, bytes: Uint8Array, ext: "jpg" |
     if (!res.ok) throw new Error(`Storage upload failed: ${res.status} ${await res.text()}`);
     return p;
   }
-  const file = path.join(LOCAL_DIR(), p);
+  const file = path.join(LOCAL_DIR(bucket), p);
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.writeFile(file, bytes);
   return p;
 }
 
-export async function removePhoto(p: string): Promise<void> {
+export async function removePhoto(p: string, bucket: Bucket = "catalog"): Promise<void> {
   if (!isPhotoPath(p)) return;
   if (useSupabase()) {
-    await fetch(`${base()}/storage/v1/object/${BUCKET}/${p}`, {
+    await fetch(`${base()}/storage/v1/object/${bucket}/${p}`, {
       method: "DELETE",
       headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
     }).catch(() => undefined);
     return;
   }
-  await fs.rm(path.join(LOCAL_DIR(), p), { force: true });
+  await fs.rm(path.join(LOCAL_DIR(bucket), p), { force: true });
 }
 
-export async function readLocalPhoto(p: string): Promise<Buffer | null> {
+export async function readLocalPhoto(p: string, bucket: Bucket = "catalog"): Promise<Buffer | null> {
   if (!isPhotoPath(p)) return null;
-  try { return await fs.readFile(path.join(LOCAL_DIR(), p)); } catch { return null; }
+  try { return await fs.readFile(path.join(LOCAL_DIR(bucket), p)); } catch { return null; }
+}
+
+/** A private photo (journal): read with the service key, never through a public URL. */
+export async function readPrivatePhoto(p: string, bucket: Bucket = "journal"): Promise<Buffer | null> {
+  if (!isPhotoPath(p)) return null;
+  if (!useSupabase()) return readLocalPhoto(p, bucket);
+  const res = await fetch(`${base()}/storage/v1/object/${bucket}/${p}`, { headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` } }).catch(() => null);
+  return res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
 }

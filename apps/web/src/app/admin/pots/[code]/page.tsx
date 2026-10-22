@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 const statusUk = (s: string) => (dict as Record<string, { uk: string }>)[`item_status_${s}`]?.uk ?? s;
 const TASK_UK: Record<string, string> = { water: "полив", feed: "підживлення", photo: "фото-звіт", rotate: "повернути горщик", prune: "обрізати", review: "запит відгуку" };
+const JOURNAL_UK: Record<string, string> = { note: "Нотатка", care: "Догляд", photo_report: "Фото-звіт", problem: "Проблема", harvest: "Збір урожаю", question: "Питання" };
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("uk-UA", { dateStyle: "short", timeStyle: "short" }) : "—");
 
 /** Everything about one physical pot: who owns it, what is planned, what they asked, how it was rated. */
@@ -25,8 +26,8 @@ export default async function PotCard({ params }: { params: Promise<{ code: stri
   const db = store();
   const item = await db.getItem(code);
   if (!item) notFound();
-  const [catalog, owners, reminders, questions, reviews, note] = await Promise.all([
-    loadProducts(), db.listOwners(), db.listReminders({ itemCode: code }), db.listQuestions({ itemCode: code }), db.listReviews(), db.getSetting<string>(`item_note:${code}`),
+  const [catalog, owners, reminders, questions, reviews, note, journal] = await Promise.all([
+    loadProducts(), db.listOwners(), db.listReminders({ itemCode: code }), db.listQuestions({ itemCode: code }), db.listReviews(), db.getSetting<string>(`item_note:${code}`), db.listJournal({ itemCode: code }),
   ]);
   const product = getProduct(item.product, catalog);
   const owner = owners.find((o) => o.id === item.ownerId);
@@ -99,7 +100,19 @@ export default async function PotCard({ params }: { params: Promise<{ code: stri
         )}
       </Panel>
 
-      <Alert tone="info" title="Журнал догляду">Записи журналу й фото з'являться, коли буде зроблено журнал у Mini App (етап 5.3). Тоді тут з'являться записи, фільтр «проблеми» і фото для претензій.</Alert>
+      <Panel title={`Журнал догляду (${journal.length})`} actions={<Button size="sm" variant="ghost" href="/admin/journal?kind=problem">Усі проблеми</Button>}>
+        {journal.length === 0 ? <p className="sh-muted">Власник ще не додавав записів.</p> : (
+          <ul className="sh-stack">
+            {journal.map((e) => (
+              <li key={e.id} className="sh-stack" style={{ gap: 6 }}>
+                <div className="flex flex-wrap items-center gap-2"><Badge tone={e.kind === "problem" ? "warning" : "leaf"}>{JOURNAL_UK[e.kind] ?? e.kind}</Badge><span className="body-sm sh-muted">{e.date}</span></div>
+                {e.note && <p className="body-sm" style={{ whiteSpace: "pre-wrap" }}>{e.note}</p>}
+                {e.photos.length > 0 && <ul className="flex flex-wrap gap-2">{e.photos.map((p) => (<li key={p}><a href={`/admin/journal-photo?path=${encodeURIComponent(p)}`} target="_blank" rel="noopener noreferrer">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={`/admin/journal-photo?path=${encodeURIComponent(p)}`} alt="Фото з журналу" loading="lazy" className="h-24 w-24 rounded-xl object-cover" /></a></li>))}</ul>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

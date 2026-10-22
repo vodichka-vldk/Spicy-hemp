@@ -1,5 +1,5 @@
 import type { CareSection } from "../domain";
-import type { CatalogEntry, Item, Owner, Question, Reminder, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
+import type { CatalogEntry, Item, JournalEntry, Owner, Question, Reminder, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
 // Thin PostgREST client (no SDK needed). Tables are defined in supabase/migrations.
 const url = () => process.env.SUPABASE_URL!.replace(/\/$/, "");
@@ -72,6 +72,13 @@ type ReminderRow = Omit<Reminder, "species" | "sentAt" | "doneAt"> & { species: 
 export const reminderFromRow = (r: ReminderRow): Reminder => ({
   id: r.id, itemCode: r.itemCode, ownerId: r.ownerId, task: r.task, dueAt: r.dueAt, status: r.status,
   ...(r.species ? { species: r.species } : {}), ...(r.sentAt ? { sentAt: r.sentAt } : {}), ...(r.doneAt ? { doneAt: r.doneAt } : {}),
+});
+
+const JOURNAL_SELECT = "id,itemCode:item_code,ownerId:owner_id,kind,date:entry_date,light,watered,note,symptom,photos,createdAt:created_at";
+type JournalRow = Omit<JournalEntry, "light" | "watered" | "note" | "symptom"> & { light: JournalEntry["light"] | null; watered: boolean | null; note: string | null; symptom: string | null };
+export const journalFromRow = (r: JournalRow): JournalEntry => ({
+  id: r.id, itemCode: r.itemCode, ownerId: r.ownerId, kind: r.kind, date: r.date, photos: r.photos, createdAt: r.createdAt,
+  ...(r.light ? { light: r.light } : {}), ...(r.watered !== null ? { watered: r.watered } : {}), ...(r.note ? { note: r.note } : {}), ...(r.symptom ? { symptom: r.symptom } : {}),
 });
 
 const QUESTION_SELECT = "id,itemCode:item_code,ownerId:owner_id,body,symptom,status,answer,answeredAt:answered_at,createdAt:created_at";
@@ -156,7 +163,7 @@ export const supabaseStore: Store = {
   async upsertOwner(o) {
     const rows = await rest<OwnerRow[]>(`owners?on_conflict=telegram_id&select=${OWNER_SELECT}`, {
       method: "POST", prefer: "resolution=merge-duplicates,return=representation",
-      body: JSON.stringify({ telegram_id: o.telegramId, username: o.username ?? null, first_name: o.firstName ?? null, locale: o.locale, notify: o.notify }),
+      body: JSON.stringify({ telegram_id: o.telegramId, username: o.username ?? null, first_name: o.firstName ?? null, locale: o.locale, notify: o.notify, ...(o.timezone ? { timezone: o.timezone } : {}), ...(o.quietFrom ? { quiet_from: o.quietFrom } : {}), ...(o.quietUntil ? { quiet_until: o.quietUntil } : {}) }),
     });
     return ownerFromRow(rows[0]);
   },
@@ -171,6 +178,17 @@ export const supabaseStore: Store = {
       body: JSON.stringify(rs.map((r) => ({ id: r.id, item_code: r.itemCode, owner_id: r.ownerId, task: r.task, species: r.species ?? null, due_at: r.dueAt, status: r.status, sent_at: r.sentAt ?? null, done_at: r.doneAt ?? null }))),
     });
   },
+  async listJournal(f) {
+    const q = [f?.itemCode ? `&item_code=eq.${encodeURIComponent(f.itemCode)}` : "", f?.ownerId ? `&owner_id=eq.${f.ownerId}` : "", f?.kind ? `&kind=eq.${f.kind}` : ""].join("");
+    return (await rest<JournalRow[]>(`journal_entries?select=${JOURNAL_SELECT}&order=entry_date.desc,created_at.desc&limit=2000${q}`)).map(journalFromRow);
+  },
+  async addJournalEntry(e) {
+    await rest("journal_entries", {
+      method: "POST",
+      body: JSON.stringify({ id: e.id, item_code: e.itemCode, owner_id: e.ownerId, kind: e.kind, entry_date: e.date, light: e.light ?? null, watered: e.watered ?? null, note: e.note ?? null, symptom: e.symptom ?? null, photos: e.photos, created_at: e.createdAt }),
+    });
+  },
+  async deleteJournalEntry(id) { await rest(`journal_entries?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }); },
   async listQuestions(f) {
     const q = [f?.itemCode ? `&item_code=eq.${encodeURIComponent(f.itemCode)}` : "", f?.ownerId ? `&owner_id=eq.${f.ownerId}` : "", f?.status ? `&status=eq.${f.status}` : ""].join("");
     return (await rest<QuestionRow[]>(`questions?select=${QUESTION_SELECT}&order=created_at.asc&limit=2000${q}`)).map(questionFromRow);

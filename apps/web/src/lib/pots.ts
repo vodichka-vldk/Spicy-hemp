@@ -36,3 +36,9 @@ export function seeded(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/** The pot code from a scanned QR value (the link ends in /p/CODE) or from what a person typed. */
+export function codeFromScan(raw: string): string {
+  const m = raw.match(/\/p\/([A-Za-z0-9-]{8,12})/);
+  return (m ? m[1] : raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
+}

@@ -1,6 +1,6 @@
 import type { Locale } from "../types";
 
-import type { CareSection, CareTask, ItemKind, ItemStatus, OrderStatus, QuestionStatus, ReminderStatus, ReviewStatus } from "../domain";
+import type { CareSection, CareTask, ItemKind, JournalKind, LightLevel, ItemStatus, OrderStatus, QuestionStatus, ReminderStatus, ReviewStatus } from "../domain";
 export type { OrderStatus };
 export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
@@ -111,6 +111,21 @@ export type Reminder = {
   doneAt?: string;
 };
 
+/** An owner's care journal entry: a note, a photo report, a problem or a harvest. Photos are private. */
+export type JournalEntry = {
+  id: string;
+  itemCode: string;
+  ownerId: string;
+  kind: JournalKind;
+  date: string; // YYYY-MM-DD
+  light?: LightLevel;
+  watered?: boolean;
+  note?: string;
+  symptom?: string;
+  photos: string[]; // paths in the private "journal" bucket, <itemcode>/<random>.<ext>
+  createdAt: string;
+};
+
 export type Question = {
   id: string;
   itemCode: string;
@@ -197,6 +212,9 @@ export interface Store {
   upsertOwner(owner: Omit<Owner, "id" | "createdAt"> & { id?: string }): Promise<Owner>;
   listReminders(filter?: { itemCode?: string; ownerId?: string; statuses?: ReminderStatus[] }): Promise<Reminder[]>;
   upsertReminders(reminders: Reminder[]): Promise<void>;
+  listJournal(filter?: { itemCode?: string; ownerId?: string; kind?: JournalKind }): Promise<JournalEntry[]>;
+  addJournalEntry(entry: JournalEntry): Promise<void>;
+  deleteJournalEntry(id: string): Promise<void>;
   listQuestions(filter?: { itemCode?: string; ownerId?: string; status?: QuestionStatus }): Promise<Question[]>;
   getQuestion(id: string): Promise<Question | null>;
   upsertQuestion(q: Question): Promise<void>;

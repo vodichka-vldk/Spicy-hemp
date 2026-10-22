@@ -17,6 +17,7 @@ const NAV = [
   { href: "/admin/pots", label: "Горщики й QR", icon: "qr-code" },
   { href: "/admin/owners", label: "Власники", icon: "user" },
   { href: "/admin/questions", label: "Питання", icon: "info" },
+  { href: "/admin/journal", label: "Журнал", icon: "camera" },
   { href: "/admin/care", label: "Графік догляду", icon: "droplet" },
   { href: "/admin/reviews", label: "Відгуки", icon: "star" },
   { href: "/admin/analytics", label: "Аналітика", icon: "chart-column" },

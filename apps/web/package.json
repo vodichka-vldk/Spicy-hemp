@@ -1,0 +1,43 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "bash scripts/e2e.sh",
+    "audit": "node tests/e2e/audit.mjs",
+    "ds:tokens": "node scripts/build-tokens.mjs",
+    "pots:generate": "tsx scripts/generate-pots.mts",
+    "sync:notion": "tsx scripts/sync-notion.mts",
+    "notion:export": "tsx scripts/export-notion-csv.mts",
+    "supabase:seed": "tsx scripts/seed-supabase.mts",
+    "check:connections": "tsx scripts/check-connections.mts"
+  },
+  "dependencies": {
+    "@fontsource/onest": "^5.3.1",
+    "@fontsource/raleway": "^5.3.0",
+    "next": "^15.5.27",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@electric-sql/pglite": "^0.5.11",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.56.1",
+    "postcss": "^8.5.30",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.4"
+  }
+}

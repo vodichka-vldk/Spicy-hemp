@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "../ds/tokens.css";
+@import "../ds/components.css";
+
+/* The design system (src/ds, docs/design-system) is the source of colours, type, radii and shadows.
+   The names below are kept so older markup keeps working; they all resolve to design-system tokens. */
+@theme {
+  --color-paper: var(--bg-page);
+  --color-card: var(--bg-card);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-leaf: var(--leaf);
+  --color-leaf-ink: var(--on-leaf);
+  --color-clay: var(--danger);
+  --color-clay-ink: var(--danger-bg);
+  --color-soft: var(--bg-soft);
+  --font-display: var(--font-display), "Onest", system-ui, sans-serif;
+  --font-sans: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { background: var(--bg-page) linear-gradient(180deg, var(--bg-page-top) 0, var(--bg-page) 520px) no-repeat; color: var(--ink); font-family: var(--font-sans); font-size: 16px; line-height: 24px; min-height: 100vh; }
+@layer base {
+  h1 { font-size: 32px; line-height: 38px; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 26px; line-height: 32px; font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 20px; line-height: 26px; font-weight: 700; }
+  @media (min-width: 768px) { h1 { font-size: 44px; line-height: 50px; } h2 { font-size: 32px; line-height: 40px; } h3 { font-size: 22px; line-height: 28px; } }
+}
+a { text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+
+.container-x { width: 100%; max-width: var(--container-max); margin-inline: auto; padding-inline: var(--space-4); }
+@media (min-width: 768px) { .container-x { padding-inline: var(--space-6); } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--tap-target); padding: 0 var(--space-6); border-radius: var(--radius-pill); font-weight: 600; text-decoration: none; border: 2px solid transparent; cursor: pointer; transition: transform .12s, filter .12s; }
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--deep); color: var(--on-deep); border-color: var(--deep-edge); }
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-clay { background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-accent); }
+.btn-ghost { background: var(--bg-card); color: var(--ink); border-color: var(--btn-edge); box-shadow: var(--shadow-pill); }
+.btn-ghost:hover { filter: brightness(1.06); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; filter: none; }
+
+.card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.chip { display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--tap-target); padding: 0 var(--space-4); border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--bg-card); font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; color: var(--ink); }
+.chip[aria-pressed="true"], .chip[aria-current] { background: var(--active); color: var(--on-active); border-color: var(--select-edge); }
+.badge { display: inline-flex; align-items: center; padding: 2px var(--space-3); border-radius: var(--radius-pill); font-size: 12px; line-height: 20px; font-weight: 700; background: var(--leaf-soft); color: var(--leaf); }
+
+.field { display: block; }
+.field > span { display: block; font-weight: 600; font-size: 14px; margin-bottom: var(--space-1); }
+.input { width: 100%; min-height: var(--tap-target); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); border: 1.5px solid var(--line-strong); background: var(--bg-card); color: var(--ink); font: inherit; font-size: 16px; }
+.input:focus { outline: 3px solid var(--focus); outline-offset: 2px; }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+.err { color: var(--danger); font-size: 14px; margin-top: var(--space-1); }
+
+details.acc { border-bottom: 1px solid var(--line); }
+details.acc > summary { list-style: none; cursor: pointer; padding: var(--space-4) var(--space-1); font-weight: 700; display: flex; justify-content: space-between; align-items: center; min-height: 48px; }
+details.acc > summary::-webkit-details-marker { display: none; }
+details.acc > summary::after { content: "+"; font-size: 1.4rem; color: var(--leaf); transition: transform .15s; }
+details.acc[open] > summary::after { content: "–"; }
+details.acc > .acc-body { padding: 0 var(--space-1) var(--space-5); color: var(--ink); }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.skip { position: absolute; left: -999px; top: 0; background: var(--action); color: var(--on-action); padding: .75rem 1rem; z-index: 100; }
+.skip:focus { left: .5rem; top: .5rem; }
+.pb-nav { padding-bottom: calc(var(--bottomnav-h) + 24px + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .pb-nav { padding-bottom: 0; } }
+
+/* Native file picker styled like a design-system secondary button */
+input[type="file"] { font: inherit; color: var(--ink-muted); max-width: 100%; }
+input[type="file"]::file-selector-button { min-height: var(--tap-target); margin-right: var(--space-3); padding: 0 var(--space-5); border: 2px solid var(--btn-edge); border-radius: var(--radius-pill); background: var(--bg-card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-pill); }
+
+/* Grid children may shrink below their content, so one wide item cannot stretch the whole page past the viewport */
+.sh-stack, .sh-stack-lg { grid-template-columns: minmax(0, 1fr); }
+.sh-grid > *, .sh-split-main, .sh-split-aside, .sh-plantcard, .sh-product { min-width: 0; }
+.sh-plantcard-text { min-width: 0; overflow-wrap: anywhere; }
+.sh-fact { min-width: 0; }
+.sh-fact-text { overflow-wrap: anywhere; }
+input[type="file"] { width: 100%; min-width: 0; }
+.overline { overflow-wrap: anywhere; }

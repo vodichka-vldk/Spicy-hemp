@@ -14,7 +14,7 @@
 
 ## Як отримати значення
 
-- **Telegram:** створіть бота в @BotFather (токен), напишіть боту `/start`, відкрийте `https://api.telegram.org/bot<токен>/getUpdates` і візьміть `chat.id`.
+- **Telegram:** токен бота з @BotFather, далі кроки в `docs/TELEGRAM.md` (вебхук і прив'язка Каті робляться в адмінці, id вручну не потрібен).
 - **Нова пошта:** ключ API в особистому кабінеті (Налаштування → Безпека). Значення `NP_SENDER_*` (ref міста, контрагента, адреси відділення, контактної особи) беруться методами API `getCities`, `getCounterparties`, `getCounterpartyAddresses`, `getCounterpartyContactPersons`; телефон у форматі `380XXXXXXXXX`.
 - **Stripe/LiqPay:** вебхуки `/api/webhooks/stripe` і `/api/webhooks/liqpay` на адресу вашого сайту.
 

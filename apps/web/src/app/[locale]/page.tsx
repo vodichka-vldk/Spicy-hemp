@@ -4,14 +4,15 @@ import { HerbCard } from "@/components/HerbParts";
 import { PotArt } from "@/components/PotArt";
 import { getHerbs, getHerb } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
-import { currencyFor, formatMoney, priceMinor, products, productTitle } from "@/lib/shop";
+import { loadPublicProducts } from "@/lib/catalog-server";
+import { currencyFor, formatMoney, priceMinor, productTitle } from "@/lib/shop";
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const cur = currencyFor(locale);
   const popular = ["basil", "mint", "rosemary", "thyme", "parsley", "oregano"].map((s) => getHerb(s)).filter((h): h is NonNullable<typeof h> => Boolean(h));
-  const sets = products.filter((p) => p.kind === "set");
+  const sets = (await loadPublicProducts()).filter((p) => p.kind === "set");
   const steps = [
     { i: "🏺", t: t(locale, "how_1_t"), d: t(locale, "how_1_d") },
     { i: "📱", t: t(locale, "how_2_t"), d: t(locale, "how_2_d") },

@@ -1,7 +1,7 @@
 import { basketContent } from "@/data/baskets";
 import { getHerb } from "./content";
 import { CARE_SECTIONS, type CareSection } from "./domain";
-import { getProduct } from "./shop";
+import { getProduct, type Product } from "./shop";
 import type { Herb, L, Locale } from "./types";
 
 export const sectionTitles: Record<CareSection, L> = {
@@ -16,8 +16,9 @@ export const sectionTitles: Record<CareSection, L> = {
 export type CardSection = { key: CareSection; title: string; body: string };
 
 /** Sections for a product card: authored basket text, or for a single plant text composed from its herb passport. */
-export function cardSections(productSlug: string, locale: Locale, overrides: Partial<Record<CareSection, L>> = {}): CardSection[] {
-  const product = getProduct(productSlug);
+export function cardSections(productSlug: string, locale: Locale, overrides: Partial<Record<CareSection, L>> = {}, resolved?: Product): CardSection[] {
+  const product = resolved ?? getProduct(productSlug);
+  const written = product?.content ?? {}; // texts written in the admin win over the built-in ones
   const herb = getHerb(product?.herbs[0] ?? productSlug);
   const authored = basketContent[productSlug];
   const fromHerb: Record<CareSection, L> | null = herb
@@ -31,9 +32,9 @@ export function cardSections(productSlug: string, locale: Locale, overrides: Par
       }
     : null;
   const src = authored ?? fromHerb;
-  if (!src) return [];
+  if (!src && Object.keys(written).length === 0) return [];
   return CARE_SECTIONS.map((key) => {
-    const body = overrides[key]?.[locale] ?? src[key][locale];
+    const body = overrides[key]?.[locale] ?? (written[key]?.[locale]?.trim() || src?.[key][locale] || "");
     return { key, title: sectionTitles[key][locale], body };
   }).filter((s) => s.body);
 }

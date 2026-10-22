@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: "Адмінка", robots: { index: fa
 const NAV = [
   { href: "/admin", label: "Сьогодні", icon: "📋" },
   { href: "/admin/orders", label: "Замовлення", icon: "🛒" },
+  { href: "/admin/catalog", label: "Каталог", icon: "🧺" },
   { href: "/admin/pots", label: "Горщики й QR", icon: "🏺" },
   { href: "/admin/reviews", label: "Відгуки", icon: "⭐" },
   { href: "/admin/analytics", label: "Аналітика", icon: "📈" },

@@ -9,6 +9,7 @@ import { getHerb } from "@/lib/content";
 import { isLocale, locales, t } from "@/lib/i18n";
 import { averageRating, isPublic, reviewPhotoUrl } from "@/lib/reviews";
 import { store } from "@/lib/store";
+import { loadProducts } from "@/lib/catalog-server";
 import { currencyFor, formatMoney, getProduct, priceMinor, products, productTitle } from "@/lib/shop";
 
 /** Static pages refreshed every few minutes so newly approved reviews appear without a redeploy. */
@@ -22,20 +23,20 @@ type P = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const { locale, slug } = await params;
-  const p = getProduct(slug);
-  return isLocale(locale) && p ? { title: productTitle(p, locale) } : {};
+  const p = getProduct(slug, await loadProducts());
+  return isLocale(locale) && p?.status === "published" ? { title: productTitle(p, locale) } : {};
 }
 
 export default async function ProductPage({ params }: P) {
   const { locale, slug } = await params;
-  const p = getProduct(slug);
-  if (!isLocale(locale) || !p) notFound();
+  const p = getProduct(slug, await loadProducts());
+  if (!isLocale(locale) || !p || p.status !== "published") notFound();
   const cur = currencyFor(locale);
   const herbs = p.herbs.map((s) => getHerb(s)!);
   const basket = p.kind === "set";
   const price = formatMoney(priceMinor(p.priceUah, cur), cur, locale);
   const facts = productFacts(herbs, locale);
-  const sections = cardSections(p.slug, locale);
+  const sections = cardSections(p.slug, locale, {}, p);
   const reviews = (await store().listReviews({ product: p.slug, status: "approved" }).catch(() => [])).filter(isPublic);
   const avg = averageRating(reviews);
   const jsonLd = {
@@ -61,7 +62,7 @@ export default async function ProductPage({ params }: P) {
             <h1 className="text-4xl font-bold text-leaf">{productTitle(p, locale)}</h1>
             {avg && <p className="mt-1"><a href="#reviews" className="text-amber-600 no-underline" aria-label={`${avg} / 5`}>★ {avg}</a> <a href="#reviews" className="text-sm text-muted">({reviews.length})</a></p>}
             <p className="mt-2 text-3xl font-bold">{price}</p>
-            <p className="text-sm text-muted">{t(locale, "price_note")} · {t(locale, "in_stock")}</p>
+            <p className="text-sm text-muted">{t(locale, "price_note")} · {t(locale, p.stockMode === "in_stock" ? "in_stock" : "made_to_order")}</p>
             <p className="mt-4 text-lg">{p.blurb ? p.blurb[locale] : herbs[0].tagline[locale]}</p>
             <p className="mt-2 text-sm text-muted">🌱 {t(locale, "buy_now_note")}</p>
           </header>

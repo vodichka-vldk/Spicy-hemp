@@ -2,7 +2,8 @@ import Link from "next/link";
 import { displayId } from "@/lib/domain";
 import { dict } from "@/lib/i18n";
 import { formatCode } from "@/lib/pots";
-import { products, productTitle } from "@/lib/shop";
+import { loadProducts } from "@/lib/catalog-server";
+import { productTitle } from "@/lib/shop";
 import { store } from "@/lib/store";
 import { generateItems } from "../actions";
 
@@ -18,8 +19,9 @@ export default async function Pots() {
     ...items.map((i) => ({ code: i.code, label: displayId(i.kind, i.displayNo, "uk"), type: "Кошик", what: i.product, batch: i.batch, status: i.status, orderId: i.orderId })),
     ...pots.map((p) => ({ code: p.code, label: "—", type: "Рослина", what: p.species, batch: p.batch, status: p.status, orderId: p.orderId })),
   ];
+  const catalog = (await loadProducts()).filter((p) => p.status !== "archived");
   const batches = [...new Set(rows.map((r) => r.batch))];
-  const opt = (kind: "set" | "pot") => products.filter((p) => p.kind === kind).map((p) => (<option key={p.slug} value={p.slug}>{productTitle(p, "uk")}</option>));
+  const opt = (kind: "set" | "pot") => catalog.filter((p) => p.kind === kind).map((p) => (<option key={p.slug} value={p.slug}>{productTitle(p, "uk")}</option>));
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Горщики й QR-коди</h1>

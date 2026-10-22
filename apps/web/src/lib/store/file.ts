@@ -3,9 +3,9 @@ import path from "node:path";
 import { getHerbs } from "../content";
 import { makeCode, seeded } from "../pots";
 import { getProduct } from "../shop";
-import type { Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
+import type { CatalogEntry, Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
-type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; orderEvents: OrderEvent[]; scans: ScanEvent[] };
+type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; catalog: CatalogEntry[]; orderEvents: OrderEvent[]; scans: ScanEvent[] };
 
 const FILE = path.join(process.cwd(), ".data", "store.json");
 
@@ -43,10 +43,10 @@ export function demoItems(): Item[] {
 async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
-    if (!db.items || !db.reviews || !db.orderEvents) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; await write(db); }
+    if (!db.items || !db.reviews || !db.orderEvents || !db.catalog) { db.items ??= demoItems(); db.reviews ??= []; db.orderEvents ??= []; db.catalog ??= []; await write(db); }
     return db;
   } catch {
-    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], orderEvents: [], scans: [] };
+    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], catalog: [], orderEvents: [], scans: [] };
     await write(db);
     return db;
   }
@@ -107,6 +107,15 @@ export const fileStore: Store = {
       if (i >= 0) db.reviews[i] = review; else db.reviews.push(review);
       await write(db);
     }),
+  listCatalog: () => serial(async () => (await read()).catalog),
+  upsertCatalogEntry: (entry) =>
+    serial(async () => {
+      const db = await read();
+      const i = db.catalog.findIndex((e) => e.slug === entry.slug);
+      if (i >= 0) db.catalog[i] = entry; else db.catalog.push(entry);
+      await write(db);
+    }),
+  deleteCatalogEntry: (slug) => serial(async () => { const db = await read(); db.catalog = db.catalog.filter((e) => e.slug !== slug); await write(db); }),
   logScan: (ev) => serial(async () => { const db = await read(); db.scans.push(ev); await write(db); }),
   listScans: (since) => serial(async () => { const s = (await read()).scans; return since ? s.filter((e) => e.ts >= since) : s; }),
   hasScanned: (code, visitor) => serial(async () => (await read()).scans.some((e) => e.potCode === code && e.visitor === visitor)),

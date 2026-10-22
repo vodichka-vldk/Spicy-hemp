@@ -129,6 +129,7 @@ export const dict = {
   add_to_cart: d("Додати в кошик", "Add to cart"),
   added: d("Додано в кошик", "Added to cart"),
   in_stock: d("В наявності", "In stock"),
+  made_to_order: d("Виготовимо на замовлення", "Made to order"),
   price_note: d("Тестові ціни", "Test prices"),
   set_save: d("Економія 10%", "Save 10%"),
   includes: d("У наборі", "Includes"),

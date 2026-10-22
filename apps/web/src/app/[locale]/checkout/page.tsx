@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { catalogFor } from "@/lib/catalog";
+import { loadPublicProducts } from "@/lib/catalog-server";
 import { isLocale, t } from "@/lib/i18n";
 import { paymentMethodsFor } from "@/lib/orders";
 import { currencyFor } from "@/lib/shop";
@@ -21,7 +22,7 @@ export default async function Checkout({ params }: { params: Promise<{ locale: s
     <CheckoutForm
       locale={locale}
       currency={currency}
-      catalog={catalogFor(locale)}
+      catalog={catalogFor(locale, await loadPublicProducts())}
       methods={{ np: paymentMethodsFor({ shippingKind: "np", currency }), intl: paymentMethodsFor({ shippingKind: "intl", currency }) }}
     />
   );

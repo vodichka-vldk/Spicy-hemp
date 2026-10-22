@@ -3,9 +3,10 @@ import { infoPages } from "@/data/pages";
 import { getFamilies, getHerbs } from "@/lib/content";
 import { locales } from "@/lib/i18n";
 import { siteUrl } from "@/lib/payments";
-import { products } from "@/lib/shop";
+import { loadPublicProducts } from "@/lib/catalog-server";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const products = await loadPublicProducts();
   const base = siteUrl();
   const paths = [
     "",

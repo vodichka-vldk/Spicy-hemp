@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { loadPublicProducts } from "@/lib/catalog-server";
 import { buildOrder, providerReady, validateOrder } from "@/lib/orders";
 import { registerNewOrder } from "@/lib/order-flow";
 import { createStripeSession, siteUrl } from "@/lib/payments";
@@ -13,10 +14,11 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "bad_json" }, { status: 400 });
   }
-  const v = validateOrder(json);
+  const catalog = await loadPublicProducts(); // only published products can be ordered
+  const v = validateOrder(json, catalog);
   if (!v.ok) return NextResponse.json({ error: "validation", errors: v.errors }, { status: 422 });
 
-  const order = buildOrder(v.value);
+  const order = buildOrder(v.value, new Date(), catalog);
   await registerNewOrder(store(), order);
 
   let redirect = `${siteUrl()}/${order.locale}/order/${order.id}`;

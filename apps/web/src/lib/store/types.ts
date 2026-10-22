@@ -1,6 +1,6 @@
 import type { Locale } from "../types";
 
-import type { ItemKind, ItemStatus, OrderStatus, ReviewStatus } from "../domain";
+import type { CareSection, ItemKind, ItemStatus, OrderStatus, ReviewStatus } from "../domain";
 export type { OrderStatus };
 export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
@@ -95,6 +95,27 @@ export type Review = {
   createdAt: string;
 };
 
+export const CATALOG_STATUSES = ["draft", "published", "archived"] as const;
+export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
+export type StockMode = "in_stock" | "made_to_order";
+
+/**
+ * Admin-managed layer over the built-in catalogue: overrides for a built-in product (price, visibility, texts)
+ * or a whole new basket. priceUah 0 means "calculate from the herbs".
+ */
+export type CatalogEntry = {
+  slug: string;
+  kind: "pot" | "set";
+  status: CatalogStatus;
+  priceUah: number;
+  stockMode: StockMode;
+  title?: { uk?: string; en?: string };
+  tagline?: { uk?: string; en?: string };
+  herbs?: string[]; // composition of a basket
+  content?: Partial<Record<CareSection, { uk?: string; en?: string }>>;
+  updatedAt: string;
+};
+
 export type ScanEvent = {
   id: string;
   ts: string;
@@ -126,6 +147,9 @@ export interface Store {
   listReviews(filter?: { product?: string; status?: ReviewStatus }): Promise<Review[]>;
   /** Approving requires consentPublic; the store refuses otherwise. */
   upsertReview(review: Review): Promise<void>;
+  listCatalog(): Promise<CatalogEntry[]>;
+  upsertCatalogEntry(entry: CatalogEntry): Promise<void>;
+  deleteCatalogEntry(slug: string): Promise<void>;
   logScan(ev: ScanEvent): Promise<void>;
   listScans(sinceIso?: string): Promise<ScanEvent[]>;
   hasScanned(potCode: string, visitor: string): Promise<boolean>;

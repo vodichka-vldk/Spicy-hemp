@@ -1,4 +1,5 @@
-import type { Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
+import type { CareSection } from "../domain";
+import type { CatalogEntry, Item, Order, OrderEvent, Pot, Review, ScanEvent, Store } from "./types";
 
 // Thin PostgREST client (no SDK needed). Tables are defined in supabase/migrations.
 const url = () => process.env.SUPABASE_URL!.replace(/\/$/, "");
@@ -40,6 +41,22 @@ export const reviewFromRow = (r: ReviewRow): Review => ({
   id: r.id, product: r.product, rating: r.rating, locale: r.locale, photos: r.photos, consentPublic: r.consentPublic, status: r.status, createdAt: r.createdAt,
   ...(r.itemCode ? { itemCode: r.itemCode } : {}), ...(r.body ? { body: r.body } : {}), ...(r.authorName ? { authorName: r.authorName } : {}),
 });
+
+type ProductRow = {
+  slug: string; kind: "basket" | "single"; status: CatalogEntry["status"]; price_uah: number; stock_mode: CatalogEntry["stockMode"];
+  data: { title?: CatalogEntry["title"]; tagline?: CatalogEntry["tagline"] }; updated_at: string;
+  product_species: Array<{ species: string }>; product_content: Array<{ locale: "uk" | "en"; section: CareSection; body: string }>;
+};
+export const catalogFromRow = (r: ProductRow): CatalogEntry => {
+  const content: NonNullable<CatalogEntry["content"]> = {};
+  for (const c of r.product_content) (content[c.section] ??= {})[c.locale] = c.body;
+  return {
+    slug: r.slug, kind: r.kind === "basket" ? "set" : "pot", status: r.status, priceUah: r.price_uah, stockMode: r.stock_mode,
+    ...(r.data.title ? { title: r.data.title } : {}), ...(r.data.tagline ? { tagline: r.data.tagline } : {}),
+    ...(r.product_species.length ? { herbs: r.product_species.map((x) => x.species).sort() } : {}),
+    ...(Object.keys(content).length ? { content } : {}), updatedAt: r.updated_at,
+  };
+};
 
 export const supabaseStore: Store = {
   async createOrder(o) { await rest("orders", { method: "POST", body: JSON.stringify(orderRow(o)) }); },
@@ -107,6 +124,25 @@ export const supabaseStore: Store = {
       body: JSON.stringify({ id: r.id, product: r.product, item_code: r.itemCode ?? null, rating: r.rating, body: r.body ?? null, author_name: r.authorName ?? null, locale: r.locale, photos: r.photos, consent_public: r.consentPublic, status: r.status, created_at: r.createdAt }),
     });
   },
+  async listCatalog() {
+    const rows = await rest<ProductRow[]>("products?select=slug,kind,status,price_uah,stock_mode,data,updated_at,product_species(species),product_content(locale,section,body)&limit=1000");
+    return rows.map(catalogFromRow);
+  },
+  async upsertCatalogEntry(e) {
+    const slug = encodeURIComponent(e.slug);
+    await rest("products", {
+      method: "POST", prefer: "resolution=merge-duplicates",
+      body: JSON.stringify({ slug: e.slug, kind: e.kind === "set" ? "basket" : "single", status: e.status, price_uah: e.priceUah, stock_mode: e.stockMode, data: { title: e.title, tagline: e.tagline } }),
+    });
+    // composition and texts are replaced as a whole
+    await rest(`product_species?product=eq.${slug}`, { method: "DELETE" });
+    if (e.herbs?.length) await rest("product_species", { method: "POST", body: JSON.stringify(e.herbs.map((species) => ({ product: e.slug, species }))) });
+    await rest(`product_content?product=eq.${slug}`, { method: "DELETE" });
+    const content = Object.entries(e.content ?? {}).flatMap(([section, l]) =>
+      (["uk", "en"] as const).flatMap((locale) => (l?.[locale]?.trim() ? [{ product: e.slug, locale, section, body: l[locale]!.trim() }] : [])));
+    if (content.length) await rest("product_content", { method: "POST", body: JSON.stringify(content) });
+  },
+  async deleteCatalogEntry(slug) { await rest(`products?slug=eq.${encodeURIComponent(slug)}`, { method: "DELETE" }); },
   async logScan(e) {
     await rest("scan_events", {
       method: "POST",

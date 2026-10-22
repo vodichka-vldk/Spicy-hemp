@@ -6,7 +6,8 @@ import { getHerb } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { averageRating, isPublic } from "@/lib/reviews";
 import { store } from "@/lib/store";
-import { currencyFor, formatMoney, priceMinor, products, productTitle } from "@/lib/shop";
+import { loadPublicProducts } from "@/lib/catalog-server";
+import { currencyFor, formatMoney, priceMinor, productTitle } from "@/lib/shop";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -22,6 +23,7 @@ export default async function Shop({ params }: { params: Promise<{ locale: strin
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const cur = currencyFor(locale);
+  const products = await loadPublicProducts();
   const approved = (await store().listReviews({ status: "approved" }).catch(() => [])).filter(isPublic);
   const rating = (slug: string) => { const r = approved.filter((x) => x.product === slug); const avg = averageRating(r); return avg ? { avg, n: r.length } : null; };
   const baskets = products.filter((p) => p.kind === "set");

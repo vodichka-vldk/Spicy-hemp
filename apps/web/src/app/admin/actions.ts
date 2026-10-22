@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { loadProducts } from "@/lib/catalog-server";
 import { getProduct } from "@/lib/shop";
 import { makeCode } from "@/lib/pots";
 import { getHerb } from "@/lib/content";
@@ -15,11 +16,12 @@ export async function allocatePots(formData: FormData) {
   if (!order || order.potCodes.length > 0) return;
   const free = (await db.listPots()).filter((p) => p.status === "planted" && !p.orderId);
   const freeItems = (await db.listItems()).filter((i) => i.status === "ready_for_sale" && !i.orderId);
+  const catalog = await loadProducts();
   const taken: Pot[] = [];
   const takenItems: Item[] = [];
   let needed = 0;
   for (const item of order.items) {
-    const product = getProduct(item.slug);
+    const product = getProduct(item.slug, catalog);
     if (!product) continue;
     if (product.kind === "set") {
       for (let n = 0; n < item.qty; n++) {
@@ -73,7 +75,7 @@ async function generatePots(formData: FormData) {
 /** Makes a batch of baskets of one set; each gets its own QR code and "САД · NNN" number. */
 async function generateBaskets(formData: FormData) {
   const slug = String(formData.get("product"));
-  const product = getProduct(slug);
+  const product = getProduct(slug, await loadProducts());
   if (!product || product.kind !== "set") return;
   const count = Math.min(200, Math.max(1, Number(formData.get("count")) || 1));
   const batch = String(formData.get("batch") || "").trim().slice(0, 40) || `K-${new Date().toISOString().slice(0, 10)}`;
@@ -93,7 +95,7 @@ async function generateBaskets(formData: FormData) {
 /** One form for everything with a QR code: pick a product, the kind (basket or single pot) follows from it. */
 export async function generateItems(formData: FormData) {
   const slug = String(formData.get("product"));
-  const product = getProduct(slug);
+  const product = getProduct(slug, await loadProducts());
   if (!product) return;
   formData.set(product.kind === "set" ? "product" : "species", slug);
   return product.kind === "set" ? generateBaskets(formData) : generatePots(formData);

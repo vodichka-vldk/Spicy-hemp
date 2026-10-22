@@ -10,6 +10,7 @@ import { getHerb } from "@/lib/content";
 import { displayId } from "@/lib/domain";
 import { isLocale, t, type DictKey } from "@/lib/i18n";
 import { cleanCode, isValidCode } from "@/lib/pots";
+import { loadProducts } from "@/lib/catalog-server";
 import { getProduct, productTitle } from "@/lib/shop";
 import { store } from "@/lib/store";
 
@@ -25,10 +26,10 @@ export default async function GardenCard({ params }: P) {
   if (!isLocale(locale) || !isValidCode(code)) notFound();
   const item = await store().getItem(code);
   if (!item) notFound();
-  const product = getProduct(item.product);
+  const product = getProduct(item.product, await loadProducts());
   const herbs = item.species.map((s) => getHerb(s)).filter((h): h is NonNullable<typeof h> => Boolean(h));
   const title = product ? productTitle(product, locale) : displayId(item.kind, item.displayNo, locale);
-  const sections = item.product ? cardSections(item.product, locale) : [];
+  const sections = item.product ? cardSections(item.product, locale, {}, product) : [];
   const made = new Date(item.readyOn + "T00:00:00Z").toLocaleDateString(locale === "uk" ? "uk-UA" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   const bot = process.env.NEXT_PUBLIC_TG_BOT;
   const art = <GardenArt colors={herbs.map((h) => h.color)} />;

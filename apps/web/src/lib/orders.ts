@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { glazes, getProduct, computeTotals, currencyFor, priceMinor, productTitle, type CartLine, type Glaze } from "./shop";
+import { glazes, getProduct, computeTotals, currencyFor, priceMinor, productTitle, products as builtIn, type CartLine, type Glaze, type Product } from "./shop";
 import { ALPHABET } from "./pots";
 import type { Locale } from "./types";
 import type { Order, PaymentMethod } from "./store/types";
@@ -44,7 +44,7 @@ export function providerReady(method: PaymentMethod): boolean {
   return false;
 }
 
-export function validateOrder(input: unknown): { ok: true; value: OrderInput } | { ok: false; errors: FieldErrors } {
+export function validateOrder(input: unknown, catalog: Product[] = builtIn): { ok: true; value: OrderInput } | { ok: false; errors: FieldErrors } {
   const errors: FieldErrors = {};
   const i = (input ?? {}) as Partial<OrderInput>;
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -52,7 +52,7 @@ export function validateOrder(input: unknown): { ok: true; value: OrderInput } |
   const locale: Locale = i.locale === "en" ? "en" : "uk";
   const lines: CartLine[] = Array.isArray(i.lines)
     ? i.lines.flatMap((l) => {
-        const p = l && typeof l.slug === "string" ? getProduct(l.slug) : undefined;
+        const p = l && typeof l.slug === "string" ? getProduct(l.slug, catalog) : undefined;
         const qty = Number(l?.qty);
         if (!p || !Number.isInteger(qty) || qty < 1 || qty > 20) return [];
         const glaze = (glazes as readonly string[]).includes(l.glaze) ? (l.glaze as Glaze) : "sage";
@@ -113,9 +113,9 @@ export function newOrderId(now = new Date()): string {
 }
 
 /** Builds the order on the server from product slugs only: client prices are never trusted. */
-export function buildOrder(input: OrderInput, now = new Date()): Order {
+export function buildOrder(input: OrderInput, now = new Date(), catalog: Product[] = builtIn): Order {
   const currency = currencyFor(input.locale);
-  const totals = computeTotals(input.lines, currency, input.shipping.kind);
+  const totals = computeTotals(input.lines, currency, input.shipping.kind, catalog);
   return {
     id: newOrderId(now),
     createdAt: now.toISOString(),
@@ -123,7 +123,7 @@ export function buildOrder(input: OrderInput, now = new Date()): Order {
     locale: input.locale,
     currency,
     items: input.lines.map((l) => {
-      const p = getProduct(l.slug)!;
+      const p = getProduct(l.slug, catalog)!;
       return { slug: l.slug, glaze: l.glaze, qty: l.qty, unitMinor: priceMinor(p.priceUah, currency), title: productTitle(p, input.locale) };
     }),
     subtotalMinor: totals.subtotal,

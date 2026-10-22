@@ -9,6 +9,7 @@ import { cardSections } from "@/lib/card";
 import { getHerb } from "@/lib/content";
 import { displayId } from "@/lib/domain";
 import { isLocale, t, type DictKey } from "@/lib/i18n";
+import { photoUrl } from "@/lib/media";
 import { cleanCode, isValidCode } from "@/lib/pots";
 import { loadProducts } from "@/lib/catalog-server";
 import { getProduct, productTitle } from "@/lib/shop";
@@ -32,7 +33,9 @@ export default async function GardenCard({ params }: P) {
   const sections = item.product ? cardSections(item.product, locale, {}, product) : [];
   const made = new Date(item.readyOn + "T00:00:00Z").toLocaleDateString(locale === "uk" ? "uk-UA" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   const bot = process.env.NEXT_PUBLIC_TG_BOT;
-  const art = <GardenArt colors={herbs.map((h) => h.color)} />;
+  const cover = product?.photos?.[0];
+  // eslint-disable-next-line @next/next/no-img-element
+  const art = cover ? <img src={photoUrl(cover)} alt="" className="h-full w-full object-cover" /> : <GardenArt colors={herbs.map((h) => h.color)} />;
   const ratio = gardenRatio(herbs.length);
 
   return (

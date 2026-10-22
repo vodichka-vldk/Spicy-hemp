@@ -113,6 +113,7 @@ export type CatalogEntry = {
   tagline?: { uk?: string; en?: string };
   herbs?: string[]; // composition of a basket
   content?: Partial<Record<CareSection, { uk?: string; en?: string }>>;
+  photos?: string[]; // storage paths, the first one is the cover
   updatedAt: string;
 };
 

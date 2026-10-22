@@ -44,7 +44,7 @@ export const reviewFromRow = (r: ReviewRow): Review => ({
 
 type ProductRow = {
   slug: string; kind: "basket" | "single"; status: CatalogEntry["status"]; price_uah: number; stock_mode: CatalogEntry["stockMode"];
-  data: { title?: CatalogEntry["title"]; tagline?: CatalogEntry["tagline"] }; updated_at: string;
+  data: { title?: CatalogEntry["title"]; tagline?: CatalogEntry["tagline"]; photos?: string[] }; updated_at: string;
   product_species: Array<{ species: string }>; product_content: Array<{ locale: "uk" | "en"; section: CareSection; body: string }>;
 };
 export const catalogFromRow = (r: ProductRow): CatalogEntry => {
@@ -52,7 +52,7 @@ export const catalogFromRow = (r: ProductRow): CatalogEntry => {
   for (const c of r.product_content) (content[c.section] ??= {})[c.locale] = c.body;
   return {
     slug: r.slug, kind: r.kind === "basket" ? "set" : "pot", status: r.status, priceUah: r.price_uah, stockMode: r.stock_mode,
-    ...(r.data.title ? { title: r.data.title } : {}), ...(r.data.tagline ? { tagline: r.data.tagline } : {}),
+    ...(r.data.photos?.length ? { photos: r.data.photos } : {}), ...(r.data.title ? { title: r.data.title } : {}), ...(r.data.tagline ? { tagline: r.data.tagline } : {}),
     ...(r.product_species.length ? { herbs: r.product_species.map((x) => x.species).sort() } : {}),
     ...(Object.keys(content).length ? { content } : {}), updatedAt: r.updated_at,
   };
@@ -132,7 +132,7 @@ export const supabaseStore: Store = {
     const slug = encodeURIComponent(e.slug);
     await rest("products", {
       method: "POST", prefer: "resolution=merge-duplicates",
-      body: JSON.stringify({ slug: e.slug, kind: e.kind === "set" ? "basket" : "single", status: e.status, price_uah: e.priceUah, stock_mode: e.stockMode, data: { title: e.title, tagline: e.tagline } }),
+      body: JSON.stringify({ slug: e.slug, kind: e.kind === "set" ? "basket" : "single", status: e.status, price_uah: e.priceUah, stock_mode: e.stockMode, data: { title: e.title, tagline: e.tagline, photos: e.photos ?? [] } }),
     });
     // composition and texts are replaced as a whole
     await rest(`product_species?product=eq.${slug}`, { method: "DELETE" });

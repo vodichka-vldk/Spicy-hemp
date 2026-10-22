@@ -16,6 +16,7 @@ export type Product = {
   status?: CatalogStatus; // built-in products are published unless the admin changed it
   stockMode?: StockMode;
   content?: CatalogEntry["content"]; // care texts written in the admin
+  photos?: string[]; // storage paths, first is the cover
 };
 
 const sets: Product[] = [
@@ -83,7 +84,7 @@ export function mergeCatalog(entries: CatalogEntry[], base: Product[] = products
       slug: e.slug, kind: cur?.kind ?? e.kind, herbs,
       priceUah: e.priceUah > 0 ? e.priceUah : e.kind === "set" ? autoSetPrice(herbs) : cur?.priceUah ?? potPrice(herbs[0]),
       titleKey: loc(e.title, cur?.titleKey), blurb: loc(e.tagline, cur?.blurb),
-      status: e.status, stockMode: e.stockMode, content: e.content,
+      status: e.status, stockMode: e.stockMode, content: e.content, photos: e.photos,
     };
     if (i >= 0) out[i] = next; else out.push(next);
   }

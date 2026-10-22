@@ -6,6 +6,7 @@ import { getHerb } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { averageRating, isPublic } from "@/lib/reviews";
 import { store } from "@/lib/store";
+import { photoUrl } from "@/lib/media";
 import { loadPublicProducts } from "@/lib/catalog-server";
 import { currencyFor, formatMoney, priceMinor, productTitle } from "@/lib/shop";
 
@@ -34,7 +35,7 @@ export default async function Shop({ params }: { params: Promise<{ locale: strin
     return (
       <li>
         <Link href={`/${locale}/shop/${p.slug}`} className="card block h-full overflow-hidden no-underline transition hover:-translate-y-0.5 hover:shadow-md">
-          <div className="aspect-square"><GardenArt colors={herbs.map((h) => h.color)} /></div>
+          <div className="aspect-square">{p.photos?.[0] ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={photoUrl(p.photos[0])} alt="" loading="lazy" className="h-full w-full object-cover" /> : <GardenArt colors={herbs.map((h) => h.color)} />}</div>
           <div className="p-3 sm:p-4">
             <h3 className="text-base font-bold text-ink">{p.kind === "set" ? productTitle(p, locale) : herbs[0].names[locale]}</h3>
             <p className="mt-0.5 line-clamp-2 text-xs text-muted">{p.kind === "set" ? herbs.map((h) => h.names[locale]).join(" · ") : herbs[0].tagline[locale]}</p>

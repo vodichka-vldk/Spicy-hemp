@@ -6,7 +6,8 @@ import { getHerbs } from "@/lib/content";
 import { CARE_SECTIONS } from "@/lib/domain";
 import { autoSetPrice, getProduct, productTitle, products as builtIn } from "@/lib/shop";
 import { store } from "@/lib/store";
-import { duplicateProduct, resetProduct, saveProduct } from "../actions";
+import { photoUrl } from "@/lib/media";
+import { changePhoto, duplicateProduct, resetProduct, saveProduct, uploadPhotos } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +35,39 @@ export default async function Editor({ params, searchParams }: { params: Promise
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/admin/catalog" className="text-sm text-muted">← Каталог</Link>
         <h1 className="text-3xl font-bold">{title}</h1>
+        {!isNew && <Link href={`/admin/catalog/${slug}/preview`} className="chip ml-auto">👁 Перегляд</Link>}
         {product?.status === "published" && <a href={`/uk/shop/${slug}`} className="chip ml-auto" target="_blank" rel="noopener noreferrer">Відкрити на сайті ↗</a>}
       </div>
       {sp.saved && <p role="status" className="rounded-lg bg-soft p-3 text-sm font-semibold">✓ Збережено</p>}
       {sp.error && <p role="alert" className="rounded-lg bg-soft p-3 text-sm font-semibold text-clay">{sp.error}</p>}
+
+      {!isNew && (
+        <section className="card p-5">
+          <h2 className="text-xl font-bold">Фото</h2>
+          <p className="mb-3 text-sm text-muted">JPEG, PNG або WebP до 5 МБ, до 8 фото. Перше фото стає обкладинкою (на картці й на сторінці товару). Без фото показується ілюстрація.</p>
+          {(entry?.photos?.length ?? 0) > 0 && (
+            <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {entry!.photos!.map((ph, n) => (
+                <li key={ph} className="card overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoUrl(ph)} alt={`Фото ${n + 1}`} className="aspect-square w-full object-cover" />
+                  <div className="flex gap-1 p-2">
+                    {n === 0 ? <span className="badge">Обкладинка</span> : (
+                      <form action={changePhoto}><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="cover" /><button className="chip !min-h-8" type="submit">Зробити обкладинкою</button></form>
+                    )}
+                    <form action={changePhoto} className="ml-auto"><input type="hidden" name="slug" value={slug} /><input type="hidden" name="photo" value={ph} /><input type="hidden" name="op" value="delete" /><button className="chip !min-h-8" type="submit" aria-label={`Видалити фото ${n + 1}`}>🗑</button></form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form action={uploadPhotos} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="slug" value={slug} />
+            <input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required className="text-sm" aria-label="Файли фото" />
+            <button className="btn btn-primary" type="submit">Додати фото</button>
+          </form>
+        </section>
+      )}
 
       <form action={saveProduct} className="space-y-6">
         <input type="hidden" name="original" value={isNew ? "" : slug} />

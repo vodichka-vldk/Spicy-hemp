@@ -8,7 +8,7 @@ import { generateItems } from "../actions";
 export const dynamic = "force-dynamic";
 
 /** All physical items with a QR code in one place: baskets and single pots. */
-export default async function Gardens() {
+export default async function Pots() {
   const [pots, items] = await Promise.all([store().listPots(), store().listItems()]);
   const rows = [
     ...items.map((i) => ({ code: i.code, label: displayId(i.kind, i.displayNo, "en"), type: "Basket", what: i.product, batch: i.batch, status: i.status, orderId: i.orderId })),
@@ -18,7 +18,7 @@ export default async function Gardens() {
   const opt = (kind: "set" | "pot") => products.filter((p) => p.kind === kind).map((p) => (<option key={p.slug} value={p.slug}>{productTitle(p, "en")}</option>));
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Gardens &amp; QR codes</h1>
+      <h1 className="text-3xl font-bold">Pots &amp; QR codes</h1>
       <section className="card p-5">
         <h2 className="mb-3 text-xl font-bold">Make a batch</h2>
         <form action={generateItems} className="grid gap-3 sm:grid-cols-4">

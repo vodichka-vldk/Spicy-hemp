@@ -3,9 +3,9 @@ import path from "node:path";
 import { getHerbs } from "../content";
 import { makeCode, seeded } from "../pots";
 import { getProduct } from "../shop";
-import type { Item, Order, Pot, ScanEvent, Store } from "./types";
+import type { Item, Order, Pot, Review, ScanEvent, Store } from "./types";
 
-type Db = { orders: Order[]; pots: Pot[]; items: Item[]; scans: ScanEvent[] };
+type Db = { orders: Order[]; pots: Pot[]; items: Item[]; reviews: Review[]; scans: ScanEvent[] };
 
 const FILE = path.join(process.cwd(), ".data", "store.json");
 
@@ -43,10 +43,10 @@ export function demoItems(): Item[] {
 async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(FILE, "utf8")) as Db;
-    if (!db.items) { db.items = demoItems(); await write(db); }
+    if (!db.items || !db.reviews) { db.items ??= demoItems(); db.reviews ??= []; await write(db); }
     return db;
   } catch {
-    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), scans: [] };
+    const db: Db = { orders: [], pots: demoPots(), items: demoItems(), reviews: [], scans: [] };
     await write(db);
     return db;
   }
@@ -94,6 +94,15 @@ export const fileStore: Store = {
         const next = Math.max(0, ...db.items.filter((x) => x.kind === it.kind).map((x) => x.displayNo)) + 1;
         db.items.push({ ...it, displayNo: it.displayNo ?? next });
       }
+      await write(db);
+    }),
+  listReviews: (f) => serial(async () => (await read()).reviews.filter((r) => (!f?.product || r.product === f.product) && (!f?.status || r.status === f.status)).sort((a, b) => b.createdAt.localeCompare(a.createdAt))),
+  upsertReview: (review) =>
+    serial(async () => {
+      if (review.status === "approved" && !review.consentPublic) throw new Error("review cannot be approved without the author's consent");
+      const db = await read();
+      const i = db.reviews.findIndex((r) => r.id === review.id);
+      if (i >= 0) db.reviews[i] = review; else db.reviews.push(review);
       await write(db);
     }),
   logScan: (ev) => serial(async () => { const db = await read(); db.scans.push(ev); await write(db); }),

@@ -110,3 +110,17 @@ export async function generateItems(formData: FormData) {
   formData.set(product.kind === "set" ? "product" : "species", slug);
   return product.kind === "set" ? generateBaskets(formData) : generatePots(formData);
 }
+
+/** Moderation: approve (only with the author's consent) or reject a review. */
+export async function moderateReview(formData: FormData) {
+  const id = String(formData.get("id"));
+  const status = String(formData.get("status"));
+  if (status !== "approved" && status !== "rejected") return;
+  const db = store();
+  const review = (await db.listReviews()).find((r) => r.id === id);
+  if (!review || (status === "approved" && !review.consentPublic)) return;
+  await db.upsertReview({ ...review, status });
+  revalidatePath("/admin/reviews");
+  revalidatePath(`/uk/shop/${review.product}`);
+  revalidatePath(`/en/shop/${review.product}`);
+}

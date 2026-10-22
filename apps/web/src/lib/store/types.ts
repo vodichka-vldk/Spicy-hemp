@@ -1,6 +1,6 @@
 import type { Locale } from "../types";
 
-import type { ItemKind, ItemStatus, OrderStatus } from "../domain";
+import type { ItemKind, ItemStatus, OrderStatus, ReviewStatus } from "../domain";
 export type { OrderStatus };
 export type PaymentMethod = "cod" | "stripe" | "liqpay";
 
@@ -45,9 +45,24 @@ export type Item = {
   batch: string;
   readyOn: string; // YYYY-MM-DD
   status: ItemStatus;
-  ownerName?: string; // the name the owner gave the garden
+  ownerName?: string; // the name the owner gave the pot
   photoPath?: string;
   orderId?: string;
+};
+
+/** A customer review; public only when the author agreed (consentPublic) and an admin approved it. */
+export type Review = {
+  id: string;
+  product: string;
+  itemCode?: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  body?: string;
+  authorName?: string;
+  locale: Locale;
+  photos: string[]; // paths in the public "reviews" bucket
+  consentPublic: boolean;
+  status: ReviewStatus;
+  createdAt: string;
 };
 
 export type ScanEvent = {
@@ -76,6 +91,9 @@ export interface Store {
   listItems(): Promise<Item[]>;
   /** Inserts or updates items; new items get the next display number of their kind. */
   upsertItems(items: Array<Omit<Item, "displayNo"> & { displayNo?: number }>): Promise<void>;
+  listReviews(filter?: { product?: string; status?: ReviewStatus }): Promise<Review[]>;
+  /** Approving requires consentPublic; the store refuses otherwise. */
+  upsertReview(review: Review): Promise<void>;
   logScan(ev: ScanEvent): Promise<void>;
   listScans(sinceIso?: string): Promise<ScanEvent[]>;
   hasScanned(potCode: string, visitor: string): Promise<boolean>;

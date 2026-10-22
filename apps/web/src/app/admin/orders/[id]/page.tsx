@@ -27,7 +27,7 @@ export default async function AdminOrder({ params, searchParams }: { params: Pro
         </section>
         <section className="card p-5 text-sm">
           <h2 className="mb-2 text-lg font-bold">Items</h2>
-          <ul className="divide-y divide-line">{o.items.map((i, n) => (<li key={n} className="flex justify-between py-2"><span>{i.title} · {i.glaze} × {i.qty}</span><span>{money(i.unitMinor * i.qty)}</span></li>))}</ul>
+          <ul className="divide-y divide-line">{o.items.map((i, n) => (<li key={n} className="flex justify-between py-2"><span>{i.title} × {i.qty}</span><span>{money(i.unitMinor * i.qty)}</span></li>))}</ul>
           <p className="mt-2 flex justify-between"><span>Shipping</span><span>{money(o.shippingMinor)}</span></p>
           <p className="flex justify-between text-lg font-bold"><span>Total ({o.payment})</span><span>{money(o.totalMinor)}</span></p>
           <form action={setStatus} className="mt-4 flex gap-2">

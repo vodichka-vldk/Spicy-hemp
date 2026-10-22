@@ -11,12 +11,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return isLocale(locale) ? { title: t(locale, "shop_title") } : {};
 }
 
+const POPULAR = ["basil", "mint", "rosemary", "thyme", "parsley", "oregano"];
+
 export default async function Shop({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const cur = currencyFor(locale);
   const baskets = products.filter((p) => p.kind === "set");
-  const plants = products.filter((p) => p.kind === "pot");
+  const plants = POPULAR.map((s) => products.find((p) => p.slug === s)).filter((p): p is NonNullable<typeof p> => Boolean(p));
   const Card = ({ slug }: { slug: string }) => {
     const p = products.find((x) => x.slug === slug)!;
     const herbs = p.herbs.map((s) => getHerb(s)!);
@@ -53,6 +55,7 @@ export default async function Shop({ params }: { params: Promise<{ locale: strin
         <h2 className="mb-1 mt-12 text-2xl font-bold">{t(locale, "plants_section")}</h2>
         <p className="mb-4 text-sm text-muted">{t(locale, "shop_plants_blurb")}</p>
         <ul className={grid}>{plants.map((p) => (<Card key={p.slug} slug={p.slug} />))}</ul>
+        <Link href={`/${locale}/plants`} className="btn btn-ghost mt-6">{t(locale, "all_plants")} →</Link>
       </section>
     </div>
   );

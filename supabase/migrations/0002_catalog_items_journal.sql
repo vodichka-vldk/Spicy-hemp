@@ -156,6 +156,26 @@ create table public.questions (
 );
 create index questions_status_idx on public.questions (status, created_at);
 
+-- ---------- reviews with optional customer photos (shown on product pages only after consent + moderation) ----------
+create table public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  product text not null references public.products (slug) on delete cascade,
+  item_code text references public.items (code) on delete set null,
+  owner_id uuid references public.owners (id),
+  rating smallint not null check (rating between 1 and 5),
+  body text check (body is null or char_length(body) <= 1000),
+  author_name text check (author_name is null or char_length(author_name) <= 40),
+  locale text not null default 'uk' check (locale in ('uk','en')),
+  photos text[] not null default '{}' check (cardinality(photos) <= 3),   -- paths in the public "reviews" bucket (copied there on approval)
+  consent_public boolean not null default false,                         -- the owner agreed to publish text and photos
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  moderated_by uuid references public.admin_profiles (user_id),
+  moderated_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (status <> 'approved' or consent_public)                         -- nothing goes public without consent
+);
+create index reviews_product_idx on public.reviews (product, status, created_at desc);
+
 -- ---------- care schedule and reminders ----------
 create table public.care_templates (             -- set by Katya per species
   species text not null references public.species (slug) on delete cascade,
@@ -298,6 +318,7 @@ on conflict do nothing;
 do $$ begin
   if to_regclass('storage.buckets') is not null then
     insert into storage.buckets (id, name, public) values ('journal', 'journal', false) on conflict (id) do nothing;
+    insert into storage.buckets (id, name, public) values ('reviews', 'reviews', true) on conflict (id) do nothing;
   end if;
 end $$;
 
@@ -313,6 +334,7 @@ alter table public.item_species enable row level security;
 alter table public.item_content enable row level security;
 alter table public.journal_entries enable row level security;
 alter table public.questions enable row level security;
+alter table public.reviews enable row level security;
 alter table public.care_templates enable row level security;
 alter table public.reminders enable row level security;
 alter table public.order_events enable row level security;
@@ -328,6 +350,7 @@ create policy "composition of published products is public" on public.product_sp
   using (exists (select 1 from public.products p where p.slug = product and p.status = 'published'));
 create policy "content of published products is public" on public.product_content for select
   using (exists (select 1 from public.products p where p.slug = product and p.status = 'published'));
+create policy "approved reviews are public" on public.reviews for select using (status = 'approved' and consent_public);
 create policy "care templates are public" on public.care_templates for select using (true);
 
 -- Admins (Supabase Auth + admin_profiles) get full access to operational data.
@@ -335,7 +358,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['owners','products','product_species','product_content','items','item_species','item_content',
-    'journal_entries','questions','care_templates','reminders','order_events','payments','shipments',
+    'journal_entries','questions','reviews','care_templates','reminders','order_events','payments','shipments',
     'batches','orders','pots','scan_events','item_transitions','order_transitions'] loop
     execute format('create policy "admins manage" on public.%I for all using (public.is_admin()) with check (public.is_admin())', t);
   end loop;

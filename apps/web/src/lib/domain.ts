@@ -60,6 +60,9 @@ export type CareSection = (typeof CARE_SECTIONS)[number];
 export const CARE_TASKS = ["water", "feed", "prune", "rotate", "photo"] as const;
 export type CareTask = (typeof CARE_TASKS)[number];
 
+export const REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+
 export const QUESTION_STATUSES = ["open", "answered", "closed"] as const;
 export type QuestionStatus = (typeof QUESTION_STATUSES)[number];
 
@@ -70,18 +73,18 @@ export function canTransition<S extends string>(table: Record<S, S[]>, from: S, 
   return table[from]?.includes(to) ?? false;
 }
 
-/** Public display id, numbered per kind: baskets "САД · 001", singles "РОСЛИНА · 001" (en: GARDEN / PLANT). */
+/** Public display id, numbered per kind: baskets "ГОРЩИК · 001", singles "РОСЛИНА · 001" (en: POT / PLANT). */
 export function displayId(kind: ItemKind, no: number, locale: "uk" | "en" = "uk"): string {
-  const word = kind === "basket" ? (locale === "uk" ? "САД" : "GARDEN") : locale === "uk" ? "РОСЛИНА" : "PLANT";
+  const word = kind === "basket" ? (locale === "uk" ? "ГОРЩИК" : "POT") : locale === "uk" ? "РОСЛИНА" : "PLANT";
   return `${word} · ${String(no).padStart(3, "0")}`;
 }
 
 const NAME_IDEAS: Record<"uk" | "en", { basket: string[]; single: string[] }> = {
-  uk: { basket: ["Мій кухонний сад", "Ароматний куточок", "Зелений сніданок", "Пряна гавань", "Сад на підвіконні"], single: ["Зелений друг", "Мій аромат", "Кущик-красень", "Пахуча дружба"] },
-  en: { basket: ["My kitchen garden", "Fragrant corner", "Green breakfast", "Spice harbour", "Windowsill garden"], single: ["Green buddy", "My aroma", "Little beauty", "Fragrant friend"] },
+  uk: { basket: ["Мій кухонний горщик", "Ароматний куточок", "Зелений сніданок", "Пряна гавань", "Горщик на підвіконні"], single: ["Зелений друг", "Мій аромат", "Кущик-красень", "Пахуча дружба"] },
+  en: { basket: ["My kitchen pot", "Fragrant corner", "Green breakfast", "Spice harbour", "Windowsill pot"], single: ["Green buddy", "My aroma", "Little beauty", "Fragrant friend"] },
 };
 
-/** Gentle suggestions for the "name your garden" field; `themes` can add ideas like the set name ("для чаю"). */
+/** Gentle suggestions for the "name your pot" field; `themes` can add ideas like the set name ("для чаю"). */
 export function suggestGardenNames(kind: ItemKind, locale: "uk" | "en", themes: string[] = [], count = 4): string[] {
   const own = themes.map((t) => t.trim()).filter(Boolean);
   return [...own, ...NAME_IDEAS[locale][kind]].slice(0, count);

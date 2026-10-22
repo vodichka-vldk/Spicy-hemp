@@ -111,6 +111,15 @@ describe("migration 0002", () => {
     await expect(db.exec("insert into journal_entries (item_code, kind) values ('BBBB3333','selfie')")).rejects.toThrow();
   });
 
+  it("never lets a review without consent be approved", async () => {
+    await db.exec("insert into products (slug, kind, price_uah) values ('rev-p','basket',1)");
+    await db.exec("insert into reviews (product, rating, consent_public, status) values ('rev-p', 5, true, 'approved')");
+    await expect(db.exec("insert into reviews (product, rating, consent_public, status) values ('rev-p', 5, false, 'approved')")).rejects.toThrow();
+    await expect(db.exec("insert into reviews (product, rating) values ('rev-p', 6)")).rejects.toThrow();
+    await expect(db.exec("insert into reviews (product, rating, photos) values ('rev-p', 4, '{a,b,c,d}')")).rejects.toThrow();
+    await db.exec("insert into reviews (product, rating) values ('rev-p', 3)");   // pending by default, not public
+  });
+
   it("requires an answer to mark a question answered", async () => {
     await expect(db.exec("insert into questions (item_code, body, status) values ('BBBB3333','?','answered')")).rejects.toThrow();
     await db.exec("insert into questions (item_code, body) values ('BBBB3333','Чому жовтіє?')");
@@ -140,6 +149,11 @@ describe("row level security", () => {
     expect(await as("anon", null, "select body from product_content")).toEqual([{ body: "Поливайте..." }]);
   });
 
+  it("shows anonymous visitors only approved reviews", async () => {
+    const r = await as("anon", null, "select status, consent_public from reviews");
+    expect(r).toEqual([{ status: "approved", consent_public: true }]);
+  });
+
   it("hides items, owners, journal, questions, orders and payments from anonymous visitors", async () => {
     for (const t of ["items", "owners", "journal_entries", "questions", "orders", "payments", "reminders", "admin_profiles"]) {
       expect(await as("anon", null, `select 1 from ${t}`), t).toEqual([]);
@@ -149,7 +163,7 @@ describe("row level security", () => {
   it("gives admins full access and nobody else", async () => {
     const admin = "11111111-1111-1111-1111-111111111111";
     expect((await as("authenticated", admin, "select 1 from journal_entries")).length).toBeGreaterThan(0);
-    expect((await as("authenticated", admin, "select slug from products")).length).toBe(2);
+    expect((await as("authenticated", admin, "select slug from products")).length).toBe(3);
     const stranger = "22222222-2222-2222-2222-222222222222";
     expect(await as("authenticated", stranger, "select 1 from journal_entries")).toEqual([]);
     expect(await as("authenticated", stranger, "select 1 from orders")).toEqual([]);

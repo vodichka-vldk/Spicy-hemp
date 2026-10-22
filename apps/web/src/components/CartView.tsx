@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { dict } from "@/lib/i18n";
-import { formatMoney, glazeColor, priceMinor, totalsFrom, type Currency } from "@/lib/shop-calc";
+import { formatMoney, priceMinor, totalsFrom, type Currency } from "@/lib/shop-calc";
 import type { Locale } from "@/lib/types";
 import { useCart } from "./CartProvider";
 import { PotArt } from "./PotArt";
@@ -42,10 +42,6 @@ export function CartView({ locale, currency, catalog }: { locale: Locale; curren
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <Link href={`/${locale}/shop/${l.slug}`} className="font-bold text-ink no-underline">{item.title}</Link>
-                  <p className="flex items-center gap-2 text-sm text-muted">
-                    <span className="inline-block h-3 w-3 rounded-full" style={{ background: glazeColor[l.glaze] }} aria-hidden />
-                    {dict.glaze[locale]}: {dict[`glaze_${l.glaze}` as "glaze_sage"][locale]}
-                  </p>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                     <div className="inline-flex items-center rounded-full border border-line" role="group" aria-label={dict.qty[locale]}>
                       <button type="button" className="h-11 w-11 text-xl" aria-label="−" onClick={() => setQty(l.slug, l.glaze, l.qty - 1)}>−</button>

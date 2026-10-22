@@ -10,8 +10,8 @@ import { products } from "@/lib/shop";
 
 describe("display ids and name ideas", () => {
   it("numbers per kind with localized prefixes", () => {
-    expect(displayId("basket", 1)).toBe("САД · 001");
-    expect(displayId("basket", 12, "en")).toBe("GARDEN · 012");
+    expect(displayId("basket", 1)).toBe("ГОРЩИК · 001");
+    expect(displayId("basket", 12, "en")).toBe("POT · 012");
     expect(displayId("single", 3)).toBe("РОСЛИНА · 003");
     expect(displayId("single", 3, "en")).toBe("PLANT · 003");
   });
@@ -62,5 +62,37 @@ describe("file store items", () => {
     expect(after).toMatchObject({ displayNo: 4, status: "sold", orderId: "SH-1" });
     await fileStore.upsertItems([{ code: "YYYY3333", kind: "single", product: "basil", species: ["basil"], batch: "T", readyOn: "2026-10-22", status: "draft" }]);
     expect((await fileStore.getItem("YYYY3333"))?.displayNo).toBe(1);
+  });
+});
+
+import { averageRating, isPublic, reviewPhotoUrl } from "@/lib/reviews";
+
+describe("reviews", () => {
+  it("averages ratings and handles none", () => {
+    expect(averageRating([])).toBeNull();
+    expect(averageRating([{ rating: 5 }, { rating: 4 }, { rating: 4 }])).toBe(4.3);
+  });
+  it("is public only with consent and approval", () => {
+    expect(isPublic({ status: "approved", consentPublic: true })).toBe(true);
+    expect(isPublic({ status: "approved", consentPublic: false })).toBe(false);
+    expect(isPublic({ status: "pending", consentPublic: true })).toBe(false);
+  });
+  it("builds safe photo urls only when storage is configured", () => {
+    delete process.env.SUPABASE_URL;
+    expect(reviewPhotoUrl("a/b.jpg")).toBeNull();
+    process.env.SUPABASE_URL = "https://x.supabase.co/";
+    expect(reviewPhotoUrl("a/b c.jpg")).toBe("https://x.supabase.co/storage/v1/object/public/reviews/a/b%20c.jpg");
+    expect(reviewPhotoUrl("../secret")).toBeNull();
+    delete process.env.SUPABASE_URL;
+  });
+  it("file store refuses to approve a review without consent and filters by product/status", async () => {
+    process.chdir(mkdtempSync(join(tmpdir(), "sh-")));
+    const { fileStore } = await import("@/lib/store/file");
+    const base = { product: "set-tea", rating: 5 as const, locale: "uk" as const, photos: [], createdAt: "2026-10-22T10:00:00Z" };
+    await fileStore.upsertReview({ ...base, id: "r1", consentPublic: false, status: "pending" });
+    await expect(fileStore.upsertReview({ ...base, id: "r1", consentPublic: false, status: "approved" })).rejects.toThrow(/consent/);
+    await fileStore.upsertReview({ ...base, id: "r2", consentPublic: true, status: "approved", createdAt: "2026-10-23T10:00:00Z" });
+    expect((await fileStore.listReviews({ product: "set-tea", status: "approved" })).map((r) => r.id)).toEqual(["r2"]);
+    expect(await fileStore.listReviews({ product: "basil" })).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import type { Item, Order, Pot, ScanEvent, Store } from "./types";
+import type { Item, Order, Pot, Review, ScanEvent, Store } from "./types";
 
 // Thin PostgREST client (no SDK needed). Tables are defined in supabase/migrations.
 const url = () => process.env.SUPABASE_URL!.replace(/\/$/, "");
@@ -32,6 +32,13 @@ export const itemFromRow = (r: ItemRow): Item => ({
   code: r.code, kind: r.kind, product: r.product ?? "", species: r.item_species.map((s) => s.species), displayNo: r.displayNo,
   batch: r.batch, readyOn: r.readyOn, status: r.status,
   ...(r.ownerName ? { ownerName: r.ownerName } : {}), ...(r.photoPath ? { photoPath: r.photoPath } : {}), ...(r.orderId ? { orderId: r.orderId } : {}),
+});
+
+const REVIEW_SELECT = "id,product,itemCode:item_code,rating,body,authorName:author_name,locale,photos,consentPublic:consent_public,status,createdAt:created_at";
+type ReviewRow = Omit<Review, "itemCode" | "body" | "authorName"> & { itemCode: string | null; body: string | null; authorName: string | null };
+export const reviewFromRow = (r: ReviewRow): Review => ({
+  id: r.id, product: r.product, rating: r.rating, locale: r.locale, photos: r.photos, consentPublic: r.consentPublic, status: r.status, createdAt: r.createdAt,
+  ...(r.itemCode ? { itemCode: r.itemCode } : {}), ...(r.body ? { body: r.body } : {}), ...(r.authorName ? { authorName: r.authorName } : {}),
 });
 
 export const supabaseStore: Store = {
@@ -78,6 +85,17 @@ export const supabaseStore: Store = {
     await rest("items", { method: "POST", body: JSON.stringify(rows), prefer: "resolution=merge-duplicates" });
     const comp = items.flatMap((i) => i.species.map((species) => ({ item: i.code, species })));
     if (comp.length) await rest("item_species", { method: "POST", body: JSON.stringify(comp), prefer: "resolution=ignore-duplicates" });
+  },
+  async listReviews(f) {
+    const q = [f?.product ? `&product=eq.${encodeURIComponent(f.product)}` : "", f?.status ? `&status=eq.${f.status}` : ""].join("");
+    return (await rest<ReviewRow[]>(`reviews?select=${REVIEW_SELECT}&order=created_at.desc&limit=500${q}`)).map(reviewFromRow);
+  },
+  async upsertReview(r) {
+    // the table check constraint also rejects "approved" without consent
+    await rest("reviews", {
+      method: "POST", prefer: "resolution=merge-duplicates",
+      body: JSON.stringify({ id: r.id, product: r.product, item_code: r.itemCode ?? null, rating: r.rating, body: r.body ?? null, author_name: r.authorName ?? null, locale: r.locale, photos: r.photos, consent_public: r.consentPublic, status: r.status, created_at: r.createdAt }),
+    });
   },
   async logScan(e) {
     await rest("scan_events", {
